@@ -34,12 +34,21 @@ cd {COAUTHORS_ROOT}
 pip install -U -e .
 ```
 
-
 Note `{COAUTHORS_ROOT}` is the path to the cloned GitHub repository (i.e. `/path/to/coauthors2tex`)
 
-## Hwo to run
+---
 
+## How to run
 
+This is simple, in the command line just type:
+
+```
+coauthors2tex
+```
+
+and follow the prompts on screen!
+
+---
 
 ## How to use the NIRPS author list
 
