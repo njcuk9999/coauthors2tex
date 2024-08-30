@@ -4,7 +4,7 @@ Quickly generate an author list from some linked googlespread sheets
 
 - [Installation](#installation)
 - [How to run](#how-to-run)
-- [How to use the NIRPS author list](#how-to-use-the-nirps-author-list)
+- [How to update the NIRPS author list](#how-to-update-the-nirps-author-list)
 
 
 
@@ -57,7 +57,7 @@ and follow the prompts on screen!
 
 ---
 
-## How to use the NIRPS author list
+## How to update the NIRPS author list
 
 - Open the googlespreadsheet [here](https://docs.google.com/spreadsheets/d/1hGPX_s_fUbEmjDtBbrWrlgwDFMC_Ek-63s1JCHnaIvA/edit?usp=sharing)
 - Add to the list of papers in the "papers" sheet
