@@ -2,6 +2,13 @@
 
 Quickly generate an author list from some linked googlespread sheets
 
+- [Installation](#installation)
+- [How to run](#how-to-run)
+- [How to use the NIRPS author list](#how-to-use-the-nirps-author-list)
+
+
+
+---
 
 ## Installation
 
