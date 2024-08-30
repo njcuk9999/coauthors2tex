@@ -179,6 +179,7 @@ def main():
     tbl_authors_paper['AUTHOR'] = np.zeros(len(tbl_authors_paper), dtype='U100')
     tbl_authors_paper['AFFILIATIONS'] = np.zeros(len(tbl_authors_paper), dtype='U100')
     tbl_authors_paper['ORCID'] = np.zeros(len(tbl_authors_paper), dtype='U100')
+    tbl_authors_paper['EMAIL'] = np.zeros(len(tbl_authors_paper), dtype='U100')
 
     # We fill the table with the authors information
     for i in range(len(tbl_authors_paper)):
@@ -187,6 +188,7 @@ def main():
                 tbl_authors_paper['AUTHOR'][i] = tbl_authors['AUTHOR'][j]
                 tbl_authors_paper['AFFILIATIONS'][i] = tbl_authors['AFFILIATIONS'][j]
                 tbl_authors_paper['ORCID'][i] = tbl_authors['ORCID'][j]
+                tbl_authors_paper['EMAIL'][i] = tbl_authors['EMAIL'][j]
 
     # Sanity checks of the author list
     # First check: are there duplicates in the author list
@@ -246,24 +248,43 @@ def main():
         ordered_numerical_tags = np.array(ordered_numerical_tags)
 
         output = ''
+
+        output+='\\author{\n'
         for iauthor in range(len(tbl_authors_paper)):
             author = tbl_authors_paper['AUTHOR'][iauthor]
 
             author_affiliations = tbl_authors_paper['AFFILIATIONS'][iauthor].split(',')
 
-            affil_txt = ''
+            affil_txt = '\\inst{'
+
             for affil in author_affiliations:
                 # ordered_numerical_tags[affil == ordered_affiliations][0]
-                affil_txt += '\\inst{' + ordered_numerical_tags[affil == ordered_affiliations][0] + '}'
+                affil_txt += ordered_numerical_tags[affil == ordered_affiliations][0]
+                if affil != author_affiliations[-1]:
+                    affil_txt += ','
 
-            output += '\\author{' + author + affil_txt + '}\n'
+            if iauthor == 0: # first author, we add the email
+                affil_txt += ',*'
 
+            affil_txt += '}'
+
+            output += author + affil_txt
+            if iauthor != len(tbl_authors_paper) - 1:
+                output += ',\n'
+            else:
+                output += '\n'
+
+        output += '}\n'
         output += '\n'
 
+
+        output += '\\institute{\n'
         for iaffil in range(len(ordered_affiliations)):
             affiliation_text = tbl_affiliations['AFFILIATION'][tbl_affiliations['SHORTNAME'] == ordered_affiliations[
                 iaffil]][0]
-            output += '\\institute{\\inst{' + ordered_numerical_tags[iaffil] + '}' + affiliation_text + '}\n'
+            output += '\\inst{'+ordered_numerical_tags[iaffil] + '}' + affiliation_text + '\\\\\n'
+        output += '\inst{*}\\email{'+tbl_authors_paper['EMAIL'][0]+'}\n'
+        output += '}\n'
 
     else:
         raise ValueError(f'The style {paper_style} is not implemented')
