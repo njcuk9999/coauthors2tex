@@ -33,7 +33,7 @@ conda create --name coauthors-env python=3.9
 conda activate coauthors-env
 ```
 
-### Step 3: Install sossisse
+### Step 3: Install the coauthors2tex code
 
 ```
 cd {COAUTHORS_ROOT}
