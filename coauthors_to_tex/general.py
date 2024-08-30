@@ -297,6 +297,10 @@ def main():
     print(output)
     print('~' * get_terminal_width())
 
+    # output to a file called tbl_papers['paper key'][i]+'_coauthors.tex'
+    with open(tbl_papers[ipaper]['paper key']+'_coauthors.tex', 'w') as f:
+        f.write(output)
+
 
 # =============================================================================
 # Start of code
