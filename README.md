@@ -18,6 +18,12 @@ Quickly generate an author list from some linked googlespread sheets
 git clone git@github.com:njcuk9999/coauthors2tex.git
 ```
 
+if this doesn't try:
+
+```
+git clone https://github.com/njcuk9999/coauthors2tex.git
+```
+
 ### Step 2: Install python 3.X using conda
 
 Using conda, create a new environment and activate it
