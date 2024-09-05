@@ -56,6 +56,12 @@ Note `{COAUTHORS_ROOT}` is the path to the cloned GitHub repository (i.e. `/path
 This is simple, in the command line just type:
 
 ```
+conda activate coauthors-env
+```
+
+then you can run with the following command:
+
+```
 coauthors2tex
 ```
 
