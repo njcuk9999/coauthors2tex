@@ -18,7 +18,7 @@ Quickly generate an author list from some linked googlespread sheets
 git clone git@github.com:njcuk9999/coauthors2tex.git
 ```
 
-if this doesn't try:
+if this doesn't work try instead:
 
 ```
 git clone https://github.com/njcuk9999/coauthors2tex.git
