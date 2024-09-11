@@ -296,6 +296,11 @@ def main():
     print('~' * get_terminal_width())
     print(output)
     print('~' * get_terminal_width())
+    print('\tCo-author list for arXiv submission')
+    print('~' * get_terminal_width())
+    print(latexify_accents(', '.join(tbl_authors_paper['AUTHOR'])))
+    print('~' * get_terminal_width())
+
 
     # output to a file called tbl_papers['paper key'][i]+'_coauthors.tex'
     with open(tbl_papers[ipaper]['paper key']+'_coauthors.tex', 'w') as f:
