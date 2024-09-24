@@ -28,6 +28,8 @@ GID2 = '831615847'
 # sheet with the authors that are not NIRPS authors
 #    (if you don't want a second sheet, just set this to None
 GID3 = '223170284'
+# sheet for the acknowledgements
+GID4 = '671986807'
 # allowed paper styles
 ALLOWED_PAPER_STYLES = ['AJ', 'AANDA']
 
