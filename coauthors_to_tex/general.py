@@ -14,7 +14,6 @@ import shutil
 import numpy as np
 import wget
 from astropy.table import Table, vstack
-
 from coauthors_to_tex import constants
 
 # =============================================================================
@@ -22,6 +21,7 @@ from coauthors_to_tex import constants
 # =============================================================================
 __version__ = constants.__version__
 __date__ = constants.__date__
+
 
 # =============================================================================
 # Define functions
@@ -114,6 +114,26 @@ def clear():
         print('\n' * 50)
 
 
+def check_columns(tbl, colnames):
+    # We check that the table has a set of column names and no other columns
+    for col_name in colnames:
+        if col_name not in tbl.keys():
+            print('~' * get_terminal_width())
+            print(f'Error: the table should have a column named *{col_name}*')
+            print('Please check the table')
+            print('~' * get_terminal_width())
+            exit()
+    for col_name in tbl.keys():
+        if col_name not in colnames:
+            print('~' * get_terminal_width())
+            print(f'Error: the table should not have a column named *{col_name}*')
+            print('Please check the table')
+            print('~' * get_terminal_width())
+            exit()
+
+    return True
+
+
 def main():
     sheet_id = constants.SHEET_ID
     gid0, gid1 = constants.GID0, constants.GID1
@@ -125,17 +145,64 @@ def main():
     tbl_papers = read_google_sheet_csv(sheet_id, gid0)
     print('\nWe fetch the data from the google sheet -- list of '
           'affiliations')
+
+    if check_columns(tbl_papers, ['paper key', 'STYLE', 'author list', 'comments']):
+        print('Columns are correct')
+    else:
+        exit()
+
     tbl_affiliations = read_google_sheet_csv(sheet_id, gid1)
     print('\nWe fetch the data from the google sheet -- list of authors '
           '[NIRPS]')
+
+    if check_columns(tbl_affiliations,  ['SHORTNAME', 'AFFILIATION']):
+        print('Columns are correct')
+    else:
+        exit()
+
     tbl_nirps_authors = read_google_sheet_csv(sheet_id, gid2)
+
+    colnames = ['AUTHOR',
+                'Last Name',
+                'First Name',
+                'ORCID',
+                'EMAIL',
+                'SHORTNAME',
+                'AFFILIATIONS',
+                'COMMENT - not read by code']
+
+    if check_columns(tbl_nirps_authors, colnames):
+        print('Columns are correct')
+    else:
+        exit()
+
     print('\nWe fetch the data from the google sheet -- list of authors '
           '[non-NIRPS]')
     if gid3 is not None:
         tbl_nonnirps_authors = read_google_sheet_csv(sheet_id, gid3)
+
+        if check_columns(tbl_nonnirps_authors, colnames):
+            print('Columns are correct')
+        else:
+            exit()
+
+
     else:
         tbl_nonnirps_authors = Table()
     clear()
+
+    duplicate_authors_flag = False
+    # We check if authors are duplicated in the two tables
+    for i in range(len(tbl_nirps_authors)):
+        for j in range(len(tbl_nonnirps_authors)):
+            if tbl_nirps_authors['SHORTNAME'][i] == tbl_nonnirps_authors['SHORTNAME'][j]:
+                print('~' * get_terminal_width())
+                print(
+                    f'Error: the author *{tbl_nirps_authors["SHORTNAME"][i]}* is duplicated in the two author lists (NIRPS and non-NIRPS)')
+                print('~' * get_terminal_width())
+                duplicate_authors_flag = True
+    if duplicate_authors_flag:
+        exit()
 
     # We concatenate the two tables of authors, to have a single table
     # with all authors
@@ -168,6 +235,22 @@ def main():
         print(f'Error: the paper number {ipaper + 1} is not in the list')
         print('Please select a number between 1 and {}'.format(len(tbl_papers)))
         print('~' * get_terminal_width())
+        exit()
+
+    bad_affil_flag = False
+    # We check that all affiliations exist in the list of affiliations
+    for i in range(len(tbl_authors)):
+        affil_author = (tbl_authors['AFFILIATIONS'][i].replace(' ', '')).split(',')
+
+        for affil in affil_author:
+            if affil not in tbl_affiliations['SHORTNAME']:
+                print('~' * get_terminal_width())
+                print(f'Error: the affiliation *{affil}* is not in the list of affiliations')
+                print(f'This is listes for author: {tbl_authors["AUTHOR"][i]}')
+                print('Please add the affiliation to the list of affiliations')
+                print('~' * get_terminal_width())
+                bad_affil_flag = True
+    if bad_affil_flag:
         exit()
 
     # We clear the terminal
@@ -249,7 +332,7 @@ def main():
 
         output = ''
 
-        output+='\\author{\n'
+        output += '\\author{\n'
         for iauthor in range(len(tbl_authors_paper)):
             author = tbl_authors_paper['AUTHOR'][iauthor]
 
@@ -263,7 +346,7 @@ def main():
                 if affil != author_affiliations[-1]:
                     affil_txt += ','
 
-            if iauthor == 0: # first author, we add the email
+            if iauthor == 0:  # first author, we add the email
                 affil_txt += ',*'
 
             affil_txt += '}'
@@ -277,13 +360,12 @@ def main():
         output += '}\n'
         output += '\n'
 
-
         output += '\\institute{\n'
         for iaffil in range(len(ordered_affiliations)):
             affiliation_text = tbl_affiliations['AFFILIATION'][tbl_affiliations['SHORTNAME'] == ordered_affiliations[
                 iaffil]][0]
-            output += '\\inst{'+ordered_numerical_tags[iaffil] + '}' + affiliation_text + '\\\\\n'
-        output += '\inst{*}\\email{'+tbl_authors_paper['EMAIL'][0]+'}\n'
+            output += '\\inst{' + ordered_numerical_tags[iaffil] + '}' + affiliation_text + '\\\\\n'
+        output += '\inst{*}\\email{' + tbl_authors_paper['EMAIL'][0] + '}\n'
         output += '}\n'
 
     else:
@@ -299,11 +381,9 @@ def main():
     print('\tCo-author list for arXiv submission')
     print('~' * get_terminal_width())
     print(latexify_accents(', '.join(tbl_authors_paper['AUTHOR'])))
-    print('~' * get_terminal_width())
-
 
     # output to a file called tbl_papers['paper key'][i]+'_coauthors.tex'
-    with open(tbl_papers[ipaper]['paper key']+'_coauthors.tex', 'w') as f:
+    with open(tbl_papers[ipaper]['paper key'] + '_coauthors.tex', 'w') as f:
         f.write(output)
 
 
@@ -317,3 +397,4 @@ if __name__ == "__main__":
 # =============================================================================
 # End of code
 # =============================================================================
+
