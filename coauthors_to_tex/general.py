@@ -192,7 +192,7 @@ def main():
     print('\nWe fetch the data from the google sheet -- list of '
           'affiliations')
 
-    if check_columns(tbl_papers, ['paper key', 'STYLE', 'author list']):
+    if check_columns(tbl_papers, ['paper key', 'STYLE','ACKNOWLEDGEMENTS', 'author list']):
         print('Columns are correct')
     else:
         exit()
@@ -462,6 +462,43 @@ def main():
     print('~' * get_terminal_width())
     print(latexify_accents(', '.join(tbl_authors_paper['AUTHOR'])))
 
+
+    ackoutput = ''
+
+    ack_paper = tbl_papers[ipaper]['ACKNOWLEDGEMENTS']
+    for ack in ack_paper.replace(' ','').split(','):
+        if ack == '0':
+            continue
+        g_ack = tbl_acknowledgements['ACKNOWLEDGEMENTS'] == ack
+
+        if np.sum(g_ack) == 0:
+            print('*'*get_terminal_width())
+            print('\n')
+            print('\tError with the acknowledgement {}'.format(ack))
+            print('\tThe acknowledgement is not in the google sheet')
+            print('\tPlease fix the acknowledgement in the google sheet')
+            print('\n')
+            print('*'*get_terminal_width())
+
+            exit()
+
+
+        tmp = tbl_acknowledgements['ACKNOWLEDGEMENTS_TEXT'][g_ack].data[0]
+        if '{INITIALS}' in tmp:
+
+            print('*'*get_terminal_width())
+            print('\n')
+            print('\tError with the acknowledgement {}'.format(ack))
+            print('\tThe text of the acknowledgement contains {INITIALS}')
+            print('\t but it is used for the entire paper. This is not allowed')
+            print('\tYou should attribute the acknowledgement to authors')
+            print('\tPlease fix the acknowledgement in the google sheet')
+            print('\n')
+            print('*'*get_terminal_width())
+
+            exit()
+        ackoutput += tmp + '\\\\\n'
+
     # we find all the unique acknowledgements
     unique_acknowledgements = []
     for ack in tbl_authors_paper['ACKNOWLEDGEMENTS']:
@@ -472,7 +509,9 @@ def main():
             if aa not in unique_acknowledgements:
                 unique_acknowledgements.append(aa)
 
-    ackoutput = ''
+
+
+
     for iuack, uack in enumerate(unique_acknowledgements):
         who = []
         for in_ack in range(len(tbl_authors_paper)):
