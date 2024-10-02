@@ -403,8 +403,9 @@ def main():
         ordered_numerical_tags = []
         for affil in tbl_authors_paper['AFFILIATIONS']:
             for a in affil.split(','):
-                if a not in ordered_affiliations:
-                    ordered_affiliations.append(a)
+                a_str = a.strip()
+                if a_str not in ordered_affiliations:
+                    ordered_affiliations.append(a_str)
                     ordered_numerical_tags.append(str(len(ordered_affiliations)))
 
         ordered_affiliations = np.array(ordered_affiliations)
@@ -421,9 +422,12 @@ def main():
             affil_txt = '\\inst{'
 
             for affil in author_affiliations:
+                affil_str = affil.strip()
                 # ordered_numerical_tags[affil == ordered_affiliations][0]
-                affil_txt += ordered_numerical_tags[affil == ordered_affiliations][0]
-                if affil != author_affiliations[-1]:
+                valid = np.where(affil == ordered_affiliations)[0]
+                print(affil_str,valid)
+                affil_txt += ordered_numerical_tags[affil_str == ordered_affiliations][0]
+                if affil_str != author_affiliations[-1]:
                     affil_txt += ','
 
             if iauthor == 0:  # first author, we add the email
@@ -544,6 +548,9 @@ def main():
 
     output = output + '\n\n' + ackoutput
 
+
+    while '  ' in output:
+        output = output.replace('  ', ' ')  # remove double spaces
 
     # output to a file called tbl_papers['paper key'][i]+'_coauthors.tex'
     with open(tbl_papers[ipaper]['paper key'] + '_coauthors.tex', 'w') as f:
