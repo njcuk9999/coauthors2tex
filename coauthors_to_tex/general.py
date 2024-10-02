@@ -425,7 +425,6 @@ def main():
                 affil_str = affil.strip()
                 # ordered_numerical_tags[affil == ordered_affiliations][0]
                 valid = np.where(affil == ordered_affiliations)[0]
-                print(affil_str,valid)
                 affil_txt += ordered_numerical_tags[affil_str == ordered_affiliations][0]
                 if affil_str != author_affiliations[-1]:
                     affil_txt += ','
