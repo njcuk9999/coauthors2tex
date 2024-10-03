@@ -138,6 +138,7 @@ def check_columns(tbl, colnames):
 
     return True
 
+
 def mk_initials(first_names, last_names):
     """
     This function creates the initials of the authors
@@ -147,36 +148,64 @@ def mk_initials(first_names, last_names):
     """
     initials = np.zeros(len(first_names), dtype='U100')
 
-    # Remove 'de' or 'da' from the last names if they are there
-    for i in range(len(last_names)):
-        if last_names[i].lower().startswith('de '):
-            last_names[i] = last_names[i][3:]
-        if last_names[i].lower().startswith('da '):
-            last_names[i] = last_names[i][3:]
+    # We get started with the number of letters in the last name
+    Nlast = np.ones(len(last_names), dtype=int)
 
-    for i in range(len(first_names)):
 
-        # if first name contains a space, then we have to split it
-        if ' ' in first_names[i]:
-            first_name = first_names[i].split(' ')
-            initials[i] = first_name[0][0] + first_name[1][0]
-        elif '-' in first_names[i]:
-            first_name = first_names[i].split('-')
-            initials[i] = first_name[0][0] +'-'+ first_name[1][0]
-        else:
-            initials[i] = first_names[i][0]
+    duplicate = np.ones(len(last_names), dtype=bool)
 
-        # if last name contains a space, then we have to split it
-        if ' ' in last_names[i]:
-            last_name = last_names[i].split(' ')
-            initials[i] += last_name[0][0] + last_name[1][0]
-        elif '-' in last_names[i]:
-            last_name = last_names[i].split('-')
-            initials[i] += last_name[0][0] +'-'+ last_name[1][0]
-        else:
-            initials[i] += last_names[i][0]
+    Nite = 0
+    while True in duplicate:
+        # Remove 'de' or 'da' from the last names if they are there
+        for i in range(len(last_names)):
+            if last_names[i].lower().startswith('de '):
+                last_names[i] = last_names[i][3:]
+            if last_names[i].lower().startswith('da '):
+                last_names[i] = last_names[i][3:]
+
+        for i in range(len(first_names)):
+
+            # if first name contains a space, then we have to split it
+            if ' ' in first_names[i]:
+                first_name = first_names[i].split(' ')
+                initials[i] = first_name[0][0] + first_name[1][0]
+            elif '-' in first_names[i]:
+                first_name = first_names[i].split('-')
+                initials[i] = first_name[0][0] +'-'+ first_name[1][0]
+            else:
+                initials[i] = first_names[i][0]
+
+            # if last name contains a space, then we have to split it
+            if ' ' in last_names[i]:
+                last_name = last_names[i].split(' ')
+                initials[i] += last_name[0][0:Nlast[i]] + last_name[1][0:Nlast[i]]
+            elif '-' in last_names[i]:
+                last_name = last_names[i].split('-')
+                initials[i] += last_name[0][0:Nlast[i]] +'-'+ last_name[1][0:Nlast[i]]
+            else:
+                initials[i] += last_names[i][0:Nlast[i]]
+
+        duplicate = np.zeros(len(initials), dtype=bool)
+        for i in range(len(initials)):
+            for j in range(i+1, len(initials)):
+                if initials[i] == initials[j]:
+                    duplicate[i] = True
+                    duplicate[j] = True
+
+        Nlast[duplicate] += 1
+        Nite += 1
+        if Nite > 10:
+            print('~' * get_terminal_width())
+            print('Error: too many iterations to find unique initials')
+            print('Please check the list of authors')
+            print('We keep having problems finding unique initials')
+            print('of coauthors {}'.format('+'.join(initials[duplicate])))
+            print('~' * get_terminal_width())
+            exit()
+
 
     return initials
+
 
 
 def main():
@@ -264,8 +293,6 @@ def main():
     # with all authors
     tbl_authors = vstack([tbl_nirps_authors, tbl_nonnirps_authors])
 
-    tbl_authors['INITIALS'] = mk_initials(tbl_authors['First Name'], tbl_authors['Last Name'])
-
     # We have a sanity check to see if the all styles are allowed
     for i in range(len(tbl_papers)):
         if tbl_papers['STYLE'][i].upper() not in allowed_paper_styles:
@@ -333,25 +360,21 @@ def main():
     clear()
 
     # We create a table with the authors of the selected paper
-    tbl_authors_paper = Table()
-    tbl_authors_paper['SHORTNAME'] = tbl_papers[ipaper]['author list'].split(',')
-    tbl_authors_paper['AUTHOR'] = np.zeros(len(tbl_authors_paper), dtype='U100')
-    tbl_authors_paper['INITIALS'] = np.zeros(len(tbl_authors_paper), dtype='U100')
-    tbl_authors_paper['AFFILIATIONS'] = np.zeros(len(tbl_authors_paper), dtype='U100')
-    tbl_authors_paper['ORCID'] = np.zeros(len(tbl_authors_paper), dtype='U100')
-    tbl_authors_paper['EMAIL'] = np.zeros(len(tbl_authors_paper), dtype='U100')
-    tbl_authors_paper['ACKNOWLEDGEMENTS'] = np.zeros(len(tbl_authors_paper), dtype='U100')
+    # Initialize tbl_authors_paper with the same columns as tbl_authors
+    tbl_authors_paper = Table(names=tbl_authors.colnames,
+                              dtype=[tbl_authors[col].dtype for col in tbl_authors.colnames])
+
+    authors_paper = np.array(tbl_papers[ipaper]['author list'].split(','))
+
 
     # We fill the table with the authors information
-    for i in range(len(tbl_authors_paper)):
-        for j in range(len(tbl_authors)):
-            if tbl_authors_paper['SHORTNAME'][i] == tbl_authors['SHORTNAME'][j]:
-                tbl_authors_paper['AUTHOR'][i] = tbl_authors['AUTHOR'][j]
-                tbl_authors_paper['AFFILIATIONS'][i] = tbl_authors['AFFILIATIONS'][j]
-                tbl_authors_paper['ORCID'][i] = tbl_authors['ORCID'][j]
-                tbl_authors_paper['EMAIL'][i] = tbl_authors['EMAIL'][j]
-                tbl_authors_paper['ACKNOWLEDGEMENTS'][i] = tbl_authors['ACKNOWLEDGEMENTS'][j]
-                tbl_authors_paper['INITIALS'][i] = tbl_authors['INITIALS'][j]
+    for j in range(len(authors_paper)):
+        for i in range(len(tbl_authors)):
+            if authors_paper[j] == tbl_authors['SHORTNAME'][i]:
+                tbl_authors_paper.add_row(tbl_authors[i])
+
+    # We create the initials of the authors
+    tbl_authors_paper['INITIALS'] = mk_initials(tbl_authors_paper['First Name'], tbl_authors_paper['Last Name'])
 
     # Sanity checks of the author list
     # First check: are there duplicates in the author list
@@ -425,6 +448,7 @@ def main():
                 affil_str = affil.strip()
                 # ordered_numerical_tags[affil == ordered_affiliations][0]
                 valid = np.where(affil == ordered_affiliations)[0]
+                print(affil_str,valid)
                 affil_txt += ordered_numerical_tags[affil_str == ordered_affiliations][0]
                 if affil_str != author_affiliations[-1]:
                     affil_txt += ','
