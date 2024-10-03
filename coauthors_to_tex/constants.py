@@ -36,6 +36,7 @@ ALLOWED_PAPER_STYLES = ['AJ', 'AANDA']
 # -----------------------------------------------------------------------------
 # Define a translation between accented letters to the latex equivalent
 LETTER_2_LATEX = dict()
+LETTER_2_LATEX['_'] = "\\_"
 LETTER_2_LATEX['é'] = "\\'e"
 LETTER_2_LATEX['è'] = "\\`e"
 LETTER_2_LATEX['ê'] = "\\^e"
