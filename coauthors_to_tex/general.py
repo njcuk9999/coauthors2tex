@@ -579,6 +579,16 @@ def main():
     with open(tbl_papers[ipaper]['paper key'] + '_coauthors.tex', 'w') as f:
         f.write(output)
 
+    print('~' * get_terminal_width())
+    print('\t co-author emails')
+
+    for i in range(len(tbl_authors_paper)):
+        email = str(tbl_authors_paper['EMAIL'][i]).strip(' ')
+        if email == '0':
+            tbl_authors_paper['EMAIL'][i] = '[' + tbl_authors_paper['AUTHOR'][i]+']'
+
+    print(', '.join(tbl_authors_paper['EMAIL']))
+    print('~' * get_terminal_width())
 
 # =============================================================================
 # Start of code
