@@ -304,6 +304,25 @@ def main():
             print('~' * get_terminal_width())
             exit()
 
+    # We check that all authors exist in the list of authors as defined on the google sheet
+    bad_author_flag = False
+    for i in range(len(tbl_papers)):
+        authors = tbl_papers['author list'][i].split(',')
+        for author in authors:
+            if author == '':
+                print('There is an empty author in the author list of paper : {}'.format(tbl_papers['paper key'][i]))
+                print('Please remove the empty author')
+                continue
+            if author not in tbl_authors['SHORTNAME']:
+                print('~' * get_terminal_width())
+                print('There is a problem in the co-author list of paper : {}'.format(tbl_papers['paper key'][i]))
+                print(f'Error: the author *{author}* is not in the list of authors')
+                print('Please add the author to the list of authors')
+                print('~' * get_terminal_width())
+                bad_author_flag = True
+    if bad_author_flag:
+        exit()
+
     # We ask the user to select the paper for which he wants the
     #    latex author list
     print('Select the paper for which you want the latex author list :')
