@@ -566,7 +566,7 @@ def main():
 
         # We join with a come except the last one that has an &
         if len(who) > 1:
-            who_txt = ', '.join(who[:-1]) + ' & ' + who[-1] + ' '
+            who_txt = ', '.join(who[:-1]) + ' \\& ' + who[-1] + ' '
         else:
             who_txt = who[0] + ' '
 
