@@ -412,6 +412,34 @@ def main():
     if bad_ack:
         exit()
 
+    bad_orcid = False
+    for i in range(len(tbl_authors)):
+        if len(tbl_authors['ORCID'][i]) > 0 and len(tbl_authors['ORCID'][i]) < 16:
+            print('~' * get_terminal_width())
+            print(f'Error: the ORCID *{tbl_authors["ORCID"][i]}* is not valid')
+            print(f'This is a problem for author: {tbl_authors["AUTHOR"][i]}')
+            print('Please add the ORCID to the list of authors')
+            print('~' * get_terminal_width())
+            bad_orcid = True
+        
+        # check that the format is correct
+        orcid = tbl_authors['ORCID'][i]
+        # we split at the - and check that segments are 4 digits
+        if len(orcid) > 0:
+            segments = orcid.split('-')
+            for seg in segments:
+                if len(seg) != 4:
+                    print('~' * get_terminal_width())
+                    print(f'Error: the ORCID *{tbl_authors["ORCID"][i]}* is not valid')
+                    print(f'This is a problem for author: {tbl_authors["AUTHOR"][i]}')
+                    print('Please add the ORCID to the list of authors')
+                    print('~' * get_terminal_width())
+                    bad_orcid = True
+
+
+    if bad_orcid:
+        exit()
+
     # Clear the terminal screen again
     clear()
 
