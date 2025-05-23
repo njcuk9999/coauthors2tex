@@ -22,14 +22,13 @@ from coauthors_to_tex import constants
 __version__ = constants.__version__
 __date__ = constants.__date__
 
-
 # =============================================================================
 # Define functions
 # =============================================================================
+
 def get_terminal_width() -> int:
     """
-    This function returns the width of the terminal, there is a default value
-    of 80 if the width cannot be determined
+    Returns the width of the terminal. Defaults to 80 if the width cannot be determined.
 
     :return: int, the width of the terminal
     """
@@ -39,23 +38,21 @@ def get_terminal_width() -> int:
 
 def safe_latex(txt: str) -> str:
     """
-    This function replaces the special characters by the latex equivalent
+    Replaces special characters in a string with their LaTeX equivalents.
 
-    :param txt:
-    :return:
+    :param txt: Input string
+    :return: Modified string with LaTeX-safe characters
     """
-    # This function replaces the special characters by the latex equivalent
-    txt = txt.replace(' & ', ' \\& ')
-    # We may add some more as we find bugs
-
+    txt = txt.replace(' & ', ' \\& ')  # Replace ampersand with LaTeX-safe version
     return txt
 
 
 def latexify_accents(txt: str) -> str:
     """
-    This function replaces the accents in the text by the latex equivalent
-    :param txt:
-    :return: txt with latex accents
+    Replaces accented characters in a string with their LaTeX equivalents.
+
+    :param txt: Input string
+    :return: Modified string with LaTeX-safe accents
     """
     for letter in constants.LETTER_2_LATEX.keys():
         txt = txt.replace(letter, constants.LETTER_2_LATEX[letter])
@@ -64,26 +61,29 @@ def latexify_accents(txt: str) -> str:
 
 def read_google_sheet_csv(sheet_id: str, gid: str) -> Table:
     """
-    This function reads a Google sheet and returns the content as an
-    astropy table
+    Reads a Google Sheet as a CSV file and returns its content as an Astropy Table.
 
-    :param sheet_id:
-    :param gid:
-    :return: the astropy table
+    :param sheet_id: Google Sheet ID
+    :param gid: Google Sheet GID (tab identifier)
+    :return: Astropy Table containing the sheet data
     """
+    # Remove temporary file if it exists
     if os.path.exists('.tmp.csv'):
         os.remove('.tmp.csv')
 
+    # Construct the URL for the Google Sheet
     csv_url = constants.GOOGLE_URL.format(sheet_id=sheet_id, gid=gid)
 
+    # Download the CSV file
     _ = wget.download(csv_url, out='.tmp.csv', bar=None)
     tbl = Table.read('.tmp.csv', format='ascii.csv')
 
+    # Remove empty or invalid rows
     key = tbl.keys()[0]
     tbl = tbl[np.array(tbl[key]) != '']
     tbl = tbl[np.array(tbl[key]) != '0']
 
-    # this is to remove the empty lines in the ORCID column
+    # Clean up ORCID column
     if 'ORCID' in tbl.keys():
         orcid = np.array(tbl['ORCID'])
         for i in range(len(orcid)):
@@ -91,17 +91,17 @@ def read_google_sheet_csv(sheet_id: str, gid: str) -> Table:
                 orcid[i] = ''
         tbl['ORCID'] = orcid
 
+    # Strip leading/trailing spaces from all columns
     for key in tbl.keys():
         v = np.char.array(tbl[key])
-        # strip the strings for leading and trailing spaces
         v = v.strip(',')
         v = v.strip()
         tbl[key] = v
 
-    # just for sanity, we remove the empty temporary file
+    # Remove temporary file
     os.remove('.tmp.csv')
 
-    # we remove all columns that have 'COMMENT' in the name
+    # Remove columns containing 'COMMENT' in their name
     for key in tbl.keys():
         if 'COMMENT' in key.upper():
             del tbl[key]
@@ -111,16 +111,23 @@ def read_google_sheet_csv(sheet_id: str, gid: str) -> Table:
 
 def clear():
     """
-    This function clears the terminal
+    Clears the terminal screen.
     """
-    if os.name == 'posix':
+    if os.name == 'posix':  # For Unix-based systems
         os.system('clear')
-    else:
+    else:  # For other systems
         print('\n' * 50)
 
 
 def check_columns(tbl, colnames):
-    # We check that the table has a set of column names and no other columns
+    """
+    Validates that a table contains the required columns and no extra columns.
+
+    :param tbl: Input table
+    :param colnames: List of required column names
+    :return: True if validation passes, exits otherwise
+    """
+    # Check for missing required columns
     for col_name in colnames:
         if col_name not in tbl.keys():
             print('~' * get_terminal_width())
@@ -128,6 +135,8 @@ def check_columns(tbl, colnames):
             print('Please check the table')
             print('~' * get_terminal_width())
             exit()
+
+    # Check for extra columns
     for col_name in tbl.keys():
         if col_name not in colnames:
             print('~' * get_terminal_width())
@@ -141,60 +150,60 @@ def check_columns(tbl, colnames):
 
 def mk_initials(first_names, last_names):
     """
-    This function creates the initials of the authors
-    :param first_names:
-    :param last_names:
-    :return: the initials
+    Generates unique initials for authors based on their first and last names.
+
+    :param first_names: List of first names
+    :param last_names: List of last names
+    :return: List of unique initials
     """
     initials = np.zeros(len(first_names), dtype='U100')
+    Nlast = np.ones(len(last_names), dtype=int)  # Number of letters to use from last name
+    duplicate = np.ones(len(last_names), dtype=bool)  # Track duplicates
+    Nite = 0  # Iteration counter
 
-    # We get started with the number of letters in the last name
-    Nlast = np.ones(len(last_names), dtype=int)
-
-
-    duplicate = np.ones(len(last_names), dtype=bool)
-
-    Nite = 0
     while True in duplicate:
-        # Remove 'de' or 'da' from the last names if they are there
+        # Remove prefixes like 'de' or 'da' from last names
         for i in range(len(last_names)):
             if last_names[i].lower().startswith('de '):
                 last_names[i] = last_names[i][3:]
             if last_names[i].lower().startswith('da '):
                 last_names[i] = last_names[i][3:]
 
+        # Generate initials
         for i in range(len(first_names)):
-
-            # if first name contains a space, then we have to split it
+            # Handle compound first names (e.g., "Jean Paul")
             if ' ' in first_names[i]:
                 first_name = first_names[i].split(' ')
                 initials[i] = first_name[0][0] + first_name[1][0]
+            # Handle hyphenated first names (e.g., "Jean-Paul")
             elif '-' in first_names[i]:
                 first_name = first_names[i].split('-')
-                initials[i] = first_name[0][0] +'-'+ first_name[1][0]
+                initials[i] = first_name[0][0] + '-' + first_name[1][0]
             else:
                 initials[i] = first_names[i][0]
 
-            # if last name contains a space, then we have to split it
+            # Handle compound last names (e.g., "Smith Johnson")
             if ' ' in last_names[i]:
                 last_name = last_names[i].split(' ')
                 initials[i] += last_name[0][0:Nlast[i]] + last_name[1][0:Nlast[i]]
+            # Handle hyphenated last names (e.g., "Smith-Johnson")
             elif '-' in last_names[i]:
                 last_name = last_names[i].split('-')
-                initials[i] += last_name[0][0:Nlast[i]] +'-'+ last_name[1][0:Nlast[i]]
+                initials[i] += last_name[0][0:Nlast[i]] + '-' + last_name[1][0:Nlast[i]]
             else:
                 initials[i] += last_names[i][0:Nlast[i]]
 
+        # Check for duplicates
         duplicate = np.zeros(len(initials), dtype=bool)
         for i in range(len(initials)):
-            for j in range(i+1, len(initials)):
+            for j in range(i + 1, len(initials)):
                 if initials[i] == initials[j]:
                     duplicate[i] = True
                     duplicate[j] = True
 
-        Nlast[duplicate] += 1
+        Nlast[duplicate] += 1  # Increase the number of letters used for duplicates
         Nite += 1
-        if Nite > 10:
+        if Nite > 10:  # Prevent infinite loops
             print('~' * get_terminal_width())
             print('Error: too many iterations to find unique initials')
             print('Please check the list of authors')
@@ -203,34 +212,37 @@ def mk_initials(first_names, last_names):
             print('~' * get_terminal_width())
             exit()
 
-
     return initials
 
 
 
 def main():
+    """
+    Main function to generate LaTeX author and acknowledgement lists from Google Sheets.
+    """
+    # Retrieve constants for Google Sheet IDs and allowed paper styles
     sheet_id = constants.SHEET_ID
     gid0, gid1 = constants.GID0, constants.GID1
     gid2, gid3 = constants.GID2, constants.GID3
     gid4 = constants.GID4
     allowed_paper_styles = constants.ALLOWED_PAPER_STYLES
 
-    # We fetch the data from the google sheet
+    # Fetch the list of papers from the Google Sheet
     print('\nWe fetch the data from the google sheet -- list of papers')
     tbl_papers = read_google_sheet_csv(sheet_id, gid0)
-    print('\nWe fetch the data from the google sheet -- list of '
-          'affiliations')
 
-    if check_columns(tbl_papers, ['paper key', 'STYLE','ACKNOWLEDGEMENTS', 'author list']):
+    # Fetch the list of affiliations from the Google Sheet
+    print('\nWe fetch the data from the google sheet -- list of affiliations')
+    if check_columns(tbl_papers, ['paper key', 'STYLE', 'ACKNOWLEDGEMENTS', 'author list']):
         print('Columns are correct')
     else:
         exit()
 
     tbl_affiliations = read_google_sheet_csv(sheet_id, gid1)
-    print('\nWe fetch the data from the google sheet -- list of authors '
-          '[NIRPS]')
 
-    if check_columns(tbl_affiliations,  ['SHORTNAME', 'AFFILIATION']):
+    # Fetch the list of NIRPS authors from the Google Sheet
+    print('\nWe fetch the data from the google sheet -- list of authors [NIRPS]')
+    if check_columns(tbl_affiliations, ['SHORTNAME', 'AFFILIATION']):
         print('Columns are correct')
     else:
         exit()
@@ -238,6 +250,7 @@ def main():
     print('\nWe fetch the data from the google sheet -- list of authors ')
     tbl_nirps_authors = read_google_sheet_csv(sheet_id, gid2)
 
+    # Define the required column names for authors
     colnames = ['AUTHOR',
                 'Last Name',
                 'First Name',
@@ -247,13 +260,14 @@ def main():
                 'AFFILIATIONS',
                 'ACKNOWLEDGEMENTS']
 
+    # Check if the NIRPS authors table has the required columns
     if check_columns(tbl_nirps_authors, colnames):
         print('Columns are correct')
     else:
         exit()
 
-    print('\nWe fetch the data from the google sheet -- list of authors '
-          '[non-NIRPS]')
+    # Fetch the list of non-NIRPS authors from the Google Sheet
+    print('\nWe fetch the data from the google sheet -- list of authors [non-NIRPS]')
     if gid3 is not None:
         tbl_nonnirps_authors = read_google_sheet_csv(sheet_id, gid3)
 
@@ -261,11 +275,11 @@ def main():
             print('Columns are correct')
         else:
             exit()
-
-
     else:
+        # If no non-NIRPS authors, create an empty table
         tbl_nonnirps_authors = Table()
 
+    # Fetch the list of acknowledgements from the Google Sheet
     print('\nWe fetch the data from the google sheet -- list of acknowledgements')
     tbl_acknowledgements = read_google_sheet_csv(sheet_id, gid4)
     if check_columns(tbl_acknowledgements, ['ACKNOWLEDGEMENTS', 'ACKNOWLEDGEMENTS_TEXT']):
@@ -273,27 +287,25 @@ def main():
     else:
         exit()
 
+    # Clear the terminal screen
     clear()
 
-
+    # Check for duplicate authors between NIRPS and non-NIRPS lists
     duplicate_authors_flag = False
-    # We check if authors are duplicated in the two tables
     for i in range(len(tbl_nirps_authors)):
         for j in range(len(tbl_nonnirps_authors)):
             if tbl_nirps_authors['SHORTNAME'][i] == tbl_nonnirps_authors['SHORTNAME'][j]:
                 print('~' * get_terminal_width())
-                print(
-                    f'Error: the author *{tbl_nirps_authors["SHORTNAME"][i]}* is duplicated in the two author lists (NIRPS and non-NIRPS)')
+                print(f'Error: the author *{tbl_nirps_authors["SHORTNAME"][i]}* is duplicated in the two author lists (NIRPS and non-NIRPS)')
                 print('~' * get_terminal_width())
                 duplicate_authors_flag = True
     if duplicate_authors_flag:
         exit()
 
-    # We concatenate the two tables of authors, to have a single table
-    # with all authors
+    # Combine NIRPS and non-NIRPS authors into a single table
     tbl_authors = vstack([tbl_nirps_authors, tbl_nonnirps_authors])
 
-    # We have a sanity check to see if the all styles are allowed
+    # Validate that all paper styles are allowed
     for i in range(len(tbl_papers)):
         if tbl_papers['STYLE'][i].upper() not in allowed_paper_styles:
             print('~' * get_terminal_width())
@@ -304,18 +316,18 @@ def main():
             print('~' * get_terminal_width())
             exit()
 
-    # We check that all authors exist in the list of authors as defined on the google sheet
+    # Check that all authors in the papers exist in the authors list
     bad_author_flag = False
     for i in range(len(tbl_papers)):
         authors = tbl_papers['author list'][i].split(',')
         for author in authors:
             if author == '':
-                print('There is an empty author in the author list of paper : {}'.format(tbl_papers['paper key'][i]))
+                print(f'There is an empty author in the author list of paper: {tbl_papers["paper key"][i]}')
                 print('Please remove the empty author')
                 continue
             if author not in tbl_authors['SHORTNAME']:
                 print('~' * get_terminal_width())
-                print('There is a problem in the co-author list of paper : {}'.format(tbl_papers['paper key'][i]))
+                print(f'There is a problem in the co-author list of paper: {tbl_papers["paper key"][i]}')
                 print(f'Error: the author *{author}* is not in the list of authors')
                 print('Please add the author to the list of authors')
                 print('~' * get_terminal_width())
@@ -323,29 +335,55 @@ def main():
     if bad_author_flag:
         exit()
 
-    # We ask the user to select the paper for which he wants the
-    #    latex author list
-    print('Select the paper for which you want the latex author list :')
+    # Check for duplicate SHORTNAME entries in the authors table
+    flag_double = False
+    for i in range(len(tbl_authors)):
+        for j in range(i + 1, len(tbl_authors)):
+            if tbl_authors['SHORTNAME'][i] == tbl_authors['SHORTNAME'][j]:
+                print('~' * get_terminal_width())
+                print(f'Error: the author *{tbl_authors["SHORTNAME"][i]}* is duplicated in the author list')
+                print('~' * get_terminal_width())
+                flag_double = True
+    if flag_double:
+        exit()
+
+    # Process acknowledgements to add LaTeX hyperlinks for URLs
+    for i in range(len(tbl_acknowledgements)):
+        ack = tbl_acknowledgements['ACKNOWLEDGEMENTS_TEXT'][i]
+        if 'http' in ack:
+            ack = ack.split(' ')
+            for j in range(len(ack)):
+                if 'http' in ack[j]:
+                    ack_text = (ack[j].split('://'))[-1]
+                    ack_link = ack[j]
+                    # Remove trailing characters like '.' or 'doi.org/'
+                    trimmed_char = ['doi.org/', '.']
+                    for c in trimmed_char:
+                        if ack_link.endswith(c):
+                            ack_link = ack_link[:-1]
+                        if ack_text.startswith(c):
+                            ack_text = ack_text[len(c):]
+                    ack[j] = '\\href{' + ack_link + '}{' + ack_text + '}'
+            tbl_acknowledgements['ACKNOWLEDGEMENTS_TEXT'][i] = ' '.join(ack)
+
+    # Prompt the user to select a paper for generating the LaTeX author list
+    print('Select the paper for which you want the latex author list:')
     for i in range(len(tbl_papers)):
-        print('[{}] {}'.format(i + 1, tbl_papers['paper key'][i]))
+        print(f'[{i + 1}] {tbl_papers["paper key"][i]}')
 
-    # We ask the user to select the paper for which he wants the latex
-    #    author list
-    ipaper = int(input('Enter the number of the paper : ')) - 1
-
-    # We check if the paper number is in the list
+    # Get the user's selection and validate it
+    ipaper = int(input('Enter the number of the paper: ')) - 1
     if ipaper < 0 or ipaper >= len(tbl_papers):
         print('~' * get_terminal_width())
         print(f'Error: the paper number {ipaper + 1} is not in the list')
-        print('Please select a number between 1 and {}'.format(len(tbl_papers)))
+        print(f'Please select a number between 1 and {len(tbl_papers)}')
         print('~' * get_terminal_width())
         exit()
 
+    # Check that all affiliations in the authors table exist in the affiliations list
     bad_affil_flag = False
-    # We check that all affiliations exist in the list of affiliations
     for i in range(len(tbl_authors)):
         affil_author = (tbl_authors['AFFILIATIONS'][i].replace(' ', '')).split(',')
-
         for affil in affil_author:
             if affil not in tbl_affiliations['SHORTNAME']:
                 print('~' * get_terminal_width())
@@ -357,13 +395,12 @@ def main():
     if bad_affil_flag:
         exit()
 
+    # Check that all acknowledgements in the authors table exist in the acknowledgements list
     bad_ack = False
-    # We check that the acknowledgements are in the list of acknowledgements
     for i in range(len(tbl_authors)):
         ack_author = (tbl_authors['ACKNOWLEDGEMENTS'][i].replace(' ', '')).split(',')
         if ack_author == ['0']:
             continue
-
         for ack in ack_author:
             if ack not in tbl_acknowledgements['ACKNOWLEDGEMENTS']:
                 print('~' * get_terminal_width())
@@ -375,28 +412,25 @@ def main():
     if bad_ack:
         exit()
 
-    # We clear the terminal
+    # Clear the terminal screen again
     clear()
 
-    # We create a table with the authors of the selected paper
-    # Initialize tbl_authors_paper with the same columns as tbl_authors
+    # Create a table for the authors of the selected paper
     tbl_authors_paper = Table(names=tbl_authors.colnames,
                               dtype=[tbl_authors[col].dtype for col in tbl_authors.colnames])
 
+    # Populate the authors table for the selected paper
     authors_paper = np.array(tbl_papers[ipaper]['author list'].split(','))
-
-
-    # We fill the table with the authors information
     for j in range(len(authors_paper)):
         for i in range(len(tbl_authors)):
             if authors_paper[j] == tbl_authors['SHORTNAME'][i]:
                 tbl_authors_paper.add_row(tbl_authors[i])
 
-    # We create the initials of the authors
+    # Generate initials for the authors of the selected paper
     tbl_authors_paper['INITIALS'] = mk_initials(tbl_authors_paper['First Name'], tbl_authors_paper['Last Name'])
 
-    # Sanity checks of the author list
-    # First check: are there duplicates in the author list
+    # Perform sanity checks on the author list
+    # Check for duplicate authors in the selected paper's author list
     for i in range(len(tbl_authors_paper)):
         for j in range(i + 1, len(tbl_authors_paper)):
             if tbl_authors_paper['SHORTNAME'][i] == tbl_authors_paper['SHORTNAME'][j]:
@@ -404,7 +438,8 @@ def main():
                 print(f'Error: the author *{tbl_authors_paper["SHORTNAME"][i]}* is duplicated in the author list')
                 print('~' * get_terminal_width())
                 exit()
-    # Second check: are all the authors in the author list
+
+    # Check for missing authors in the selected paper's author list
     for i in range(len(tbl_authors_paper)):
         if tbl_authors_paper['AUTHOR'][i] == '':
             print('~' * get_terminal_width())
@@ -413,7 +448,7 @@ def main():
             print('~' * get_terminal_width())
             exit()
 
-    # We find the style of the paper references
+    # Determine the style of the paper (e.g., AJ or A&A) and generate LaTeX output
     paper_style = tbl_papers[ipaper]['STYLE'].upper()
 
     # We create the latex output for the Astronomical Journal style
@@ -478,6 +513,13 @@ def main():
             affil_txt += '}'
 
             output += author + affil_txt
+
+            orcid = tbl_authors_paper['ORCID'][iauthor]
+
+            if len(orcid) > 4:
+                orcid = '\orcidlink{' + orcid + '}'
+                output += orcid
+
             if iauthor != len(tbl_authors_paper) - 1:
                 output += ',\n'
             else:
@@ -492,11 +534,14 @@ def main():
                 iaffil]][0]
             output += '\\inst{' + ordered_numerical_tags[iaffil] + '}' + affiliation_text + '\\\\\n'
         output += '\inst{*}\\email{' + tbl_authors_paper['EMAIL'][0] + '}\n'
-        output += '}\n'
+        output += '}'
+
+        output += '\n'
 
     else:
         raise ValueError(f'The style {paper_style} is not implemented')
 
+    # Convert accents and special characters to LaTeX-safe equivalents
     output = latexify_accents(output)
     output = safe_latex(output)
 
@@ -508,7 +553,7 @@ def main():
     print('~' * get_terminal_width())
     print(latexify_accents(', '.join(tbl_authors_paper['AUTHOR'])))
 
-
+    # Prepare acknowledgements output
     ackoutput = ''
 
     ack_paper = tbl_papers[ipaper]['ACKNOWLEDGEMENTS']
@@ -528,10 +573,8 @@ def main():
 
             exit()
 
-
         tmp = tbl_acknowledgements['ACKNOWLEDGEMENTS_TEXT'][g_ack].data[0]
         if '{INITIALS}' in tmp:
-
             print('*'*get_terminal_width())
             print('\n')
             print('\tError with the acknowledgement {}'.format(ack))
@@ -555,16 +598,14 @@ def main():
             if aa not in unique_acknowledgements:
                 unique_acknowledgements.append(aa)
 
-
-
-
+    # For each unique acknowledgement, find which authors it applies to and format accordingly
     for iuack, uack in enumerate(unique_acknowledgements):
         who = []
         for in_ack in range(len(tbl_authors_paper)):
             if uack in tbl_authors_paper['ACKNOWLEDGEMENTS'][in_ack]:
                 who.append(tbl_authors_paper['INITIALS'][in_ack])
 
-        # We join with a come except the last one that has an &
+        # We join with a comma except the last one that has an &
         if len(who) > 1:
             who_txt = ', '.join(who[:-1]) + ' \\& ' + who[-1] + ' '
         else:
@@ -574,7 +615,6 @@ def main():
         txt_ack =  tbl_acknowledgements['ACKNOWLEDGEMENTS_TEXT'][g_ack].data[0]
         if '{INITIALS}' in txt_ack:
             txt_ack = txt_ack.replace('{INITIALS}', who_txt)
-
 
         ackoutput += txt_ack
         if iuack != len(unique_acknowledgements) - 1:
@@ -590,7 +630,7 @@ def main():
 
     output = output + '\n\n' + ackoutput
 
-
+    # Remove double spaces in the output
     while '  ' in output:
         output = output.replace('  ', ' ')  # remove double spaces
 
@@ -601,6 +641,7 @@ def main():
     print('~' * get_terminal_width())
     print('\t co-author emails')
 
+    # Print out all co-author emails, replacing missing ones with author names in brackets
     for i in range(len(tbl_authors_paper)):
         email = str(tbl_authors_paper['EMAIL'][i]).strip(' ')
         if email == '0':
