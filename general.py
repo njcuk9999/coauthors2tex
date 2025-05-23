@@ -171,19 +171,23 @@ def mk_initials(first_names, last_names):
 
         # Generate initials
         for i in range(len(first_names)):
-            if ' ' in first_names[i]:  # Handle compound first names
+            # Handle compound first names (e.g., "Jean Paul")
+            if ' ' in first_names[i]:
                 first_name = first_names[i].split(' ')
                 initials[i] = first_name[0][0] + first_name[1][0]
-            elif '-' in first_names[i]:  # Handle hyphenated first names
+            # Handle hyphenated first names (e.g., "Jean-Paul")
+            elif '-' in first_names[i]:
                 first_name = first_names[i].split('-')
                 initials[i] = first_name[0][0] + '-' + first_name[1][0]
             else:
                 initials[i] = first_names[i][0]
 
-            if ' ' in last_names[i]:  # Handle compound last names
+            # Handle compound last names (e.g., "Smith Johnson")
+            if ' ' in last_names[i]:
                 last_name = last_names[i].split(' ')
                 initials[i] += last_name[0][0:Nlast[i]] + last_name[1][0:Nlast[i]]
-            elif '-' in last_names[i]:  # Handle hyphenated last names
+            # Handle hyphenated last names (e.g., "Smith-Johnson")
+            elif '-' in last_names[i]:
                 last_name = last_names[i].split('-')
                 initials[i] += last_name[0][0:Nlast[i]] + '-' + last_name[1][0:Nlast[i]]
             else:
@@ -213,6 +217,9 @@ def mk_initials(first_names, last_names):
 
 
 def main():
+    """
+    Main function to generate LaTeX author and acknowledgement lists from Google Sheets.
+    """
     # Retrieve constants for Google Sheet IDs and allowed paper styles
     sheet_id = constants.SHEET_ID
     gid0, gid1 = constants.GID0, constants.GID1
@@ -505,8 +512,6 @@ def main():
 
             affil_txt += '}'
 
-
-
             output += author + affil_txt
 
             orcid = tbl_authors_paper['ORCID'][iauthor]
@@ -520,8 +525,6 @@ def main():
             else:
                 output += '\n'
 
-
-
         output += '}\n'
         output += '\n'
 
@@ -533,12 +536,12 @@ def main():
         output += '\inst{*}\\email{' + tbl_authors_paper['EMAIL'][0] + '}\n'
         output += '}'
 
-
         output += '\n'
 
     else:
         raise ValueError(f'The style {paper_style} is not implemented')
 
+    # Convert accents and special characters to LaTeX-safe equivalents
     output = latexify_accents(output)
     output = safe_latex(output)
 
@@ -550,7 +553,7 @@ def main():
     print('~' * get_terminal_width())
     print(latexify_accents(', '.join(tbl_authors_paper['AUTHOR'])))
 
-
+    # Prepare acknowledgements output
     ackoutput = ''
 
     ack_paper = tbl_papers[ipaper]['ACKNOWLEDGEMENTS']
@@ -570,10 +573,8 @@ def main():
 
             exit()
 
-
         tmp = tbl_acknowledgements['ACKNOWLEDGEMENTS_TEXT'][g_ack].data[0]
         if '{INITIALS}' in tmp:
-
             print('*'*get_terminal_width())
             print('\n')
             print('\tError with the acknowledgement {}'.format(ack))
@@ -597,16 +598,14 @@ def main():
             if aa not in unique_acknowledgements:
                 unique_acknowledgements.append(aa)
 
-
-
-
+    # For each unique acknowledgement, find which authors it applies to and format accordingly
     for iuack, uack in enumerate(unique_acknowledgements):
         who = []
         for in_ack in range(len(tbl_authors_paper)):
             if uack in tbl_authors_paper['ACKNOWLEDGEMENTS'][in_ack]:
                 who.append(tbl_authors_paper['INITIALS'][in_ack])
 
-        # We join with a come except the last one that has an &
+        # We join with a comma except the last one that has an &
         if len(who) > 1:
             who_txt = ', '.join(who[:-1]) + ' \\& ' + who[-1] + ' '
         else:
@@ -616,7 +615,6 @@ def main():
         txt_ack =  tbl_acknowledgements['ACKNOWLEDGEMENTS_TEXT'][g_ack].data[0]
         if '{INITIALS}' in txt_ack:
             txt_ack = txt_ack.replace('{INITIALS}', who_txt)
-
 
         ackoutput += txt_ack
         if iuack != len(unique_acknowledgements) - 1:
@@ -632,7 +630,7 @@ def main():
 
     output = output + '\n\n' + ackoutput
 
-
+    # Remove double spaces in the output
     while '  ' in output:
         output = output.replace('  ', ' ')  # remove double spaces
 
@@ -643,6 +641,7 @@ def main():
     print('~' * get_terminal_width())
     print('\t co-author emails')
 
+    # Print out all co-author emails, replacing missing ones with author names in brackets
     for i in range(len(tbl_authors_paper)):
         email = str(tbl_authors_paper['EMAIL'][i]).strip(' ')
         if email == '0':
