@@ -505,11 +505,22 @@ def main():
 
             affil_txt += '}'
 
+
+
             output += author + affil_txt
+
+            orcid = tbl_authors_paper['ORCID'][iauthor]
+
+            if len(orcid) > 4:
+                orcid = '\orcidlink{' + orcid + '}'
+                output += orcid
+
             if iauthor != len(tbl_authors_paper) - 1:
                 output += ',\n'
             else:
                 output += '\n'
+
+
 
         output += '}\n'
         output += '\n'
@@ -520,7 +531,10 @@ def main():
                 iaffil]][0]
             output += '\\inst{' + ordered_numerical_tags[iaffil] + '}' + affiliation_text + '\\\\\n'
         output += '\inst{*}\\email{' + tbl_authors_paper['EMAIL'][0] + '}\n'
-        output += '}\n'
+        output += '}'
+
+
+        output += '\n'
 
     else:
         raise ValueError(f'The style {paper_style} is not implemented')
