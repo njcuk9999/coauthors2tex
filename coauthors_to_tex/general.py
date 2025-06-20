@@ -247,6 +247,24 @@ def main():
     else:
         exit()
 
+    # we add the country for the affiliations. There is a key 'COUNTRY' in the affiliations table
+    # --> affiliations *must* end with ", "
+    valid_countries = ['Brazil', 'Canada', 'Chile', 'France', 'Germany', 'Portugal', 'Spain', 'Sweden',
+       'Switzerland', 'UK', 'USA']
+    countries = [v.split(', ')[-1] for v in tbl_affiliations['AFFILIATION']]
+    #check that all countries are valid
+    for i_affiliation, affiliation in enumerate(tbl_affiliations['AFFILIATION']):
+        if countries[i_affiliation] not in valid_countries:
+            print('~' * get_terminal_width())
+            print(f'Bad affiliation: {affiliation}')
+            print(f'Error: the country *{countries[i_affiliation]}* is not valid')
+
+            exit()
+    tbl_affiliations['COUNTRY'] = countries
+
+
+        
+
     print('\nWe fetch the data from the google sheet -- list of authors ')
     tbl_nirps_authors = read_google_sheet_csv(sheet_id, gid2)
 
@@ -304,6 +322,16 @@ def main():
 
     # Combine NIRPS and non-NIRPS authors into a single table
     tbl_authors = vstack([tbl_nirps_authors, tbl_nonnirps_authors])
+
+    tbl_authors['COUNTRY'] = np.zeros(len(tbl_authors), dtype='U100')
+    for i in range(len(tbl_authors)):
+        affils = tbl_authors[i]['AFFILIATIONS'].split(',')
+        countries_author = []
+        for affil in affils:
+            g = tbl_affiliations['SHORTNAME'] == affil.strip()
+            countries_author.append(tbl_affiliations['COUNTRY'][g.argmax()])
+        countries_author = np.unique(countries_author)
+        tbl_authors['COUNTRY'][i] = ', '.join(countries_author)
 
     # Validate that all paper styles are allowed
     for i in range(len(tbl_papers)):
@@ -677,6 +705,19 @@ def main():
 
     print(', '.join(tbl_authors_paper['EMAIL']))
     print('~' * get_terminal_width())
+
+    print('Total number of authors: {}'.format(len(tbl_authors_paper)))
+    print('Stats regarding the regional origin of the authors [unique counts]:')
+    u_country = np.unique(tbl_authors_paper['COUNTRY'])
+    for country in u_country:
+        n_authors = np.sum(tbl_authors_paper['COUNTRY'] == country)
+        print(f'\t{country}: {n_authors} authors')
+
+    print('Stats regarding the regional origin of the authors [joint counts]:')
+    u_country =  np.unique([v.strip() for v in (','.join(tbl_authors_paper['COUNTRY'])).split(',')])
+    for country in u_country:
+        n_authors = np.sum([country in v for v in tbl_authors_paper['COUNTRY']])
+        print(f'\t{country}: {n_authors} authors')
 
 # =============================================================================
 # Start of code
