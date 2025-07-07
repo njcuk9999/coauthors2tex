@@ -12,8 +12,8 @@ Created on 2024-08-30 at 12:16
 # =============================================================================
 # Define variables
 # =============================================================================
-__version__ = '1.0'
-__date__ = '2024-08-30'
+__version__ = '1.1'
+__date__ = '2025-07-07'
 # -----------------------------------------------------------------------------
 # The URL to google (must have the "sheet_id" and "gid" parts)
 GOOGLE_URL = 'https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}'
