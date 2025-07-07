@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "coauthors_to_tex"
+version = "1.1"
+description = "Quickly generate an author list from some linked Google Spreadsheets"
+readme = "README.md"
+requires-python = ">=3.8"
+
+authors = [
+  { name = "Etienne Artigau", email = "etienne.artigau@umontreal.ca" },
+  { name = "Neil Cook" }
+]
+
+license = { text = "MIT License" }
+
+dependencies = [
+  "numpy",
+  "astropy",
+  "wget",
+  "rapidfuzz"
+]
+
+[project.urls]
+Homepage = "https://github.com/njcuk9999/coauthors2tex"
+
+[project.scripts]
+coauthors2tex = "coauthors_to_tex.general:main"
+coauthorsxmatch = "coauthors_to_tex.xmatch_authors:main"
+
+
+[tool.setuptools]
+packages = ["coauthors_to_tex"]
+zip-safe = false
