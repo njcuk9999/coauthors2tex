@@ -886,6 +886,12 @@ def main():
         n_authors = np.sum([country in v for v in tbl_authors_paper['COUNTRY']])
         print(f'\t{country}: {n_authors} authors')
 
+    print('~' * get_terminal_width())
+    print('Simple list of co-authors in order of appearance:\n')
+    print('\n'.join(tbl_authors_paper['AUTHOR']))
+    print('\n')
+    print('~' * get_terminal_width())
+
 # =============================================================================
 # Start of code
 # =============================================================================
