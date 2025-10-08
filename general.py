@@ -15,6 +15,8 @@ import numpy as np
 import wget
 from astropy.table import Table, vstack
 from coauthors_to_tex import constants
+from rapidfuzz import process, fuzz
+import unicodedata
 
 # =============================================================================
 # Define variables
@@ -355,57 +357,7 @@ def mk_initials(first_names, last_names):
 
     return initials
 
-
-
-def main():
-    """
-    Main function to generate LaTeX author and acknowledgement lists from Google Sheets.
-    """
-    # Retrieve constants for Google Sheet IDs and allowed paper styles
-    sheet_id = constants.SHEET_ID
-    gid0, gid1 = constants.GID0, constants.GID1
-    gid2, gid3 = constants.GID2, constants.GID3
-    gid4 = constants.GID4
-    allowed_paper_styles = constants.ALLOWED_PAPER_STYLES
-
-    # Fetch the list of papers from the Google Sheet
-    print('\nWe fetch the data from the google sheet -- list of papers')
-    tbl_papers = read_google_sheet_csv(sheet_id, gid0)
-
-    # Fetch the list of affiliations from the Google Sheet
-    print('\nWe fetch the data from the google sheet -- list of affiliations')
-    if check_columns(tbl_papers, ['paper key', 'STYLE', 'ACKNOWLEDGEMENTS', 'author list']):
-        print('Columns are correct')
-    else:
-        exit()
-
-    tbl_affiliations = read_google_sheet_csv(sheet_id, gid1)
-
-    # Fetch the list of NIRPS authors from the Google Sheet
-    print('\nWe fetch the data from the google sheet -- list of authors [NIRPS]')
-    if check_columns(tbl_affiliations, ['SHORTNAME', 'AFFILIATION']):
-        print('Columns are correct')
-    else:
-        exit()
-
-    # we add the country for the affiliations. There is a key 'COUNTRY' in the affiliations table
-    # --> affiliations *must* end with ", "
-    valid_countries = country_list()
-    
-    countries = [v.split(', ')[-1] for v in tbl_affiliations['AFFILIATION']]
-    #check that all countries are valid
-    for i_affiliation, affiliation in enumerate(tbl_affiliations['AFFILIATION']):
-        if countries[i_affiliation] not in valid_countries:
-            print('~' * get_terminal_width())
-            print(f'Bad affiliation: {affiliation}')
-            print(f'Error: the country *{countries[i_affiliation]}* is not valid')
-
-            exit()
-    tbl_affiliations['COUNTRY'] = countries
-
-
-        
-
+def get_tbl_authors(sheet_id,gid2, gid3, gid4) -> Table:
     print('\nWe fetch the data from the google sheet -- list of authors ')
     tbl_nirps_authors = read_google_sheet_csv(sheet_id, gid2)
 
@@ -463,6 +415,66 @@ def main():
 
     # Combine NIRPS and non-NIRPS authors into a single table
     tbl_authors = vstack([tbl_nirps_authors, tbl_nonnirps_authors])
+
+    return tbl_authors, tbl_acknowledgements
+
+def normalize_name(name):
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', name.lower())
+        if unicodedata.category(c) != 'Mn'
+    )
+
+
+
+def main():
+    """
+    Main function to generate LaTeX author and acknowledgement lists from Google Sheets.
+    """
+    # Retrieve constants for Google Sheet IDs and allowed paper styles
+    sheet_id = constants.SHEET_ID
+    gid0, gid1 = constants.GID0, constants.GID1
+    gid2, gid3 = constants.GID2, constants.GID3
+    gid4 = constants.GID4
+    allowed_paper_styles = constants.ALLOWED_PAPER_STYLES
+
+    # Fetch the list of papers from the Google Sheet
+    print('\nWe fetch the data from the google sheet -- list of papers')
+    tbl_papers = read_google_sheet_csv(sheet_id, gid0)
+
+    # Fetch the list of affiliations from the Google Sheet
+    print('\nWe fetch the data from the google sheet -- list of affiliations')
+    if check_columns(tbl_papers, ['paper key', 'STYLE', 'ACKNOWLEDGEMENTS', 'author list','Program ID','Overleaf Link']):
+        print('Columns are correct')
+    else:
+        exit()
+
+    tbl_affiliations = read_google_sheet_csv(sheet_id, gid1)
+
+    # Fetch the list of NIRPS authors from the Google Sheet
+    print('\nWe fetch the data from the google sheet -- list of authors [NIRPS]')
+    if check_columns(tbl_affiliations, ['SHORTNAME', 'AFFILIATION']):
+        print('Columns are correct')
+    else:
+        exit()
+
+    # we add the country for the affiliations. There is a key 'COUNTRY' in the affiliations table
+    # --> affiliations *must* end with ", "
+    valid_countries = country_list()
+    
+    countries = [v.split(', ')[-1] for v in tbl_affiliations['AFFILIATION']]
+    #check that all countries are valid
+    for i_affiliation, affiliation in enumerate(tbl_affiliations['AFFILIATION']):
+        if countries[i_affiliation] not in valid_countries:
+            print('~' * get_terminal_width())
+            print(f'Bad affiliation: {affiliation}')
+            print(f'Error: the country *{countries[i_affiliation]}* is not valid')
+
+            exit()
+    tbl_affiliations['COUNTRY'] = countries
+
+
+    tbl_authors, tbl_acknowledgements = get_tbl_authors(sheet_id,gid2, gid3, gid4)
+
 
     tbl_authors['COUNTRY'] = np.zeros(len(tbl_authors), dtype='U100')
     for i in range(len(tbl_authors)):
@@ -548,6 +560,13 @@ def main():
         print(f'Please select a number between 1 and {len(tbl_papers)}')
         print('~' * get_terminal_width())
         exit()
+
+    # find the PROGRAM ID
+    program_ids = tbl_papers['Program ID'][ipaper]
+    if len(program_ids) != 0:
+        program_ids_blurp = f' Based in part on Guaranteed Time Observations collected at the European Southern Observatory under ESO program {program_ids} by the NIRPS Consortium.'
+    else:
+        program_ids_blurp = ''
 
     # Check that all affiliations in the authors table exist in the affiliations list
     bad_affil_flag = False
@@ -873,6 +892,18 @@ def main():
     for country in u_country:
         n_authors = np.sum([country in v for v in tbl_authors_paper['COUNTRY']])
         print(f'\t{country}: {n_authors} authors')
+
+    print('~' * get_terminal_width())
+    print('Simple list of co-authors in order of appearance:\n')
+    print('\n'.join(tbl_authors_paper['AUTHOR']))
+    print('\n')
+    print('~' * get_terminal_width())
+    if len(program_ids_blurp) > 0:
+        print('~ Program ID blurb for the acknowledgements section:')
+        print('\n')
+        print(program_ids_blurp)
+        print('\n')
+        print('~' * get_terminal_width())
 
 # =============================================================================
 # Start of code
