@@ -43,7 +43,7 @@ def country_list():
     "Brunei Darussalam", "Bulgaria", "Burkina Faso",
     "Burundi", "Cambodia", "Cameroon", "Canada",
     "Cape Verde", "Cayman Islands",
-    "Central African Republic", "Chad", "Chile", "China",
+    "Central African Republic", "Chad", "Chile", "China","People's Republic of China",
     "Christmas Island", "Cocos (Keeling) Islands",
     "Colombia", "Comoros",
     "Congo, the Democratic Republic of the", "Congo",
