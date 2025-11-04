@@ -369,6 +369,7 @@ def get_tbl_authors(sheet_id,gid2, gid3, gid4) -> Table:
                 'EMAIL',
                 'SHORTNAME',
                 'AFFILIATIONS',
+                'Program ID',
                 'ACKNOWLEDGEMENTS']
 
     # Check if the NIRPS authors table has the required columns
