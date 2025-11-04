@@ -443,7 +443,7 @@ def main():
 
     # Fetch the list of affiliations from the Google Sheet
     print('\nWe fetch the data from the google sheet -- list of affiliations')
-    if check_columns(tbl_papers, ['paper key', 'STYLE', 'ACKNOWLEDGEMENTS', 'author list']):
+    if check_columns(tbl_papers, ['paper key', 'STYLE', 'ACKNOWLEDGEMENTS', 'author list','Program ID','Overleaf Link']):
         print('Columns are correct')
     else:
         exit()
