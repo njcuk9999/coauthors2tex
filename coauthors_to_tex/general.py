@@ -535,6 +535,9 @@ def main():
             ack = ack.split(' ')
             for j in range(len(ack)):
                 if 'http' in ack[j]:
+                    if 'href' in ack[j]:
+                        # Already has a hyperlink
+                        continue
                     ack_text = (ack[j].split('://'))[-1]
                     ack_link = ack[j]
                     # Remove trailing characters like '.' or 'doi.org/'
@@ -842,6 +845,11 @@ def main():
         ackoutput += txt_ack
         if iuack != len(unique_acknowledgements) - 1:
             ackoutput += '\\\\\n'
+
+    if tbl_papers[ipaper]['paper key'] in tbl_acknowledgements['ACKNOWLEDGEMENTS']:
+        g_ack = tbl_acknowledgements['ACKNOWLEDGEMENTS'] == tbl_papers[ipaper]['paper key']
+        txt_ack =  tbl_acknowledgements['ACKNOWLEDGEMENTS_TEXT'][g_ack].data[0]
+        ackoutput += '\\\\\n' + txt_ack
 
     ackoutput = latexify_accents(ackoutput)
 
