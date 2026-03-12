@@ -720,36 +720,22 @@ def main():
         for iauthor in range(len(tbl_authors_paper)):
             author = tbl_authors_paper['AUTHOR'][iauthor]
 
-            author_affiliations = tbl_authors_paper['AFFILIATIONS'][iauthor].split(',')
+            author_affiliations = [a.strip() for a in tbl_authors_paper['AFFILIATIONS'][iauthor].split(',')]
 
-            affil_txt = '\\inst{'
+            affil_nums = ','.join(
+                ordered_numerical_tags[affil_str == ordered_affiliations][0]
+                for affil_str in author_affiliations
+            )
+            affil_txt = '\\inst{' + affil_nums + '}'
 
-            for affil in author_affiliations:
-                affil_str = affil.strip()
-                # ordered_numerical_tags[affil == ordered_affiliations][0]
-                valid = np.where(affil == ordered_affiliations)[0]
-                print(affil_str,valid)
-                affil_txt += ordered_numerical_tags[affil_str == ordered_affiliations][0]
-                if affil_str != author_affiliations[-1]:
-                    affil_txt += ','
-
-            if iauthor == 0:  # first author, we add the email
-                affil_txt += ',*'
-
-            affil_txt += '}'
-
-            output += author + affil_txt
-
-            orcid = tbl_authors_paper['ORCID'][iauthor]
-
-            if len(orcid) > 4:
-                orcid = '\orcidlink{' + orcid + '}'
-                output += orcid
-
-            if iauthor != len(tbl_authors_paper) - 1:
-                output += ',\n'
+            email = str(tbl_authors_paper['EMAIL'][iauthor]).strip()
+            if iauthor == 0:  # corresponding author gets \corrauth{}
+                email_txt = '\\corrauth{' + email + '}' if email and email != '0' else ''
             else:
-                output += '\n'
+                email_txt = '\\email{' + email + '}' if email and email != '0' else ''
+
+            prefix = '' if iauthor == 0 else '\\and '
+            output += prefix + author + affil_txt + email_txt + '\n'
 
         output += '}\n'
         output += '\n'
@@ -759,7 +745,6 @@ def main():
             affiliation_text = tbl_affiliations['AFFILIATION'][tbl_affiliations['SHORTNAME'] == ordered_affiliations[
                 iaffil]][0]
             output += '\\inst{' + ordered_numerical_tags[iaffil] + '}' + affiliation_text + '\\\\\n'
-        output += '\inst{*}\\email{' + tbl_authors_paper['EMAIL'][0] + '}\n'
         output += '}'
 
         output += '\n'
