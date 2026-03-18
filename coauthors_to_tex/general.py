@@ -236,9 +236,7 @@ def read_google_sheet_csv(sheet_id: str, gid: str) -> Table:
 
     # Strip leading/trailing spaces from all columns
     for key in tbl.keys():
-        v = np.char.array(tbl[key])
-        v = v.strip(',')
-        v = v.strip()
+        v = np.array([str(x).strip(',').strip() for x in tbl[key]])
         tbl[key] = v
 
     # Remove temporary file
@@ -585,6 +583,7 @@ def main():
         ack_author = (tbl_authors['ACKNOWLEDGEMENTS'][i].replace(' ', '')).split(',')
         if ack_author == ['0']:
             continue
+        ack_author = [a for a in ack_author if a != '--']
         for ack in ack_author:
             if ack not in tbl_acknowledgements['ACKNOWLEDGEMENTS']:
                 print('~' * get_terminal_width())
@@ -769,7 +768,7 @@ def main():
 
     ack_paper = tbl_papers[ipaper]['ACKNOWLEDGEMENTS']
     for ack in ack_paper.replace(' ','').split(','):
-        if ack == '0':
+        if ack == '0' or ack == '--':
             continue
         g_ack = tbl_acknowledgements['ACKNOWLEDGEMENTS'] == ack
 
@@ -804,7 +803,7 @@ def main():
     for ack in tbl_authors_paper['ACKNOWLEDGEMENTS']:
         ack2 = ack.replace(' ','').split(',')
         for aa in ack2:
-            if aa == '0':
+            if aa == '0' or aa == '--':
                 continue
             if aa not in unique_acknowledgements:
                 unique_acknowledgements.append(aa)
