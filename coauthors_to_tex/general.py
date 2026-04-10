@@ -519,8 +519,14 @@ def main():
     for i in range(len(tbl_authors)):
         for j in range(i + 1, len(tbl_authors)):
             if tbl_authors['SHORTNAME'][i] == tbl_authors['SHORTNAME'][j]:
+                # find which papers reference this author
+                shortname = tbl_authors['SHORTNAME'][i]
+                papers_with_author = [tbl_papers['paper key'][k] for k in range(len(tbl_papers))
+                                      if shortname in tbl_papers['author list'][k].split(',')]
                 print('~' * get_terminal_width())
-                print(f'Error: the author *{tbl_authors["SHORTNAME"][i]}* is duplicated in the author list')
+                print(f'Error: the author *{shortname}* is duplicated in the global author list')
+                if papers_with_author:
+                    print(f'This author appears in the following paper(s): {", ".join(papers_with_author)}')
                 print('~' * get_terminal_width())
                 flag_double = True
     if flag_double:
@@ -645,7 +651,7 @@ def main():
             if tbl_authors_paper['SHORTNAME'][i] == tbl_authors_paper['SHORTNAME'][j]:
                 duplicate_authors_flag = True
                 print('~' * get_terminal_width())
-                print(f'Error: the co-author *{tbl_authors_paper["SHORTNAME"][i]}* is listed twice in the author list')
+                print(f'Error: the co-author *{tbl_authors_paper["SHORTNAME"][i]}* is listed twice in the author list of paper: {tbl_papers[ipaper]["paper key"]}')
                 print('~' * get_terminal_width())
     if duplicate_authors_flag:
         exit()
@@ -660,7 +666,7 @@ def main():
         for j in range(i + 1, len(tbl_authors_paper)):
             if tbl_authors_paper['SHORTNAME'][i] == tbl_authors_paper['SHORTNAME'][j]:
                 print('~' * get_terminal_width())
-                print(f'Error: the author *{tbl_authors_paper["SHORTNAME"][i]}* is duplicated in the author list')
+                print(f'Error: the author *{tbl_authors_paper["SHORTNAME"][i]}* is duplicated in the author list of paper: {tbl_papers[ipaper]["paper key"]}')
                 print('~' * get_terminal_width())
                 exit()
 
@@ -715,7 +721,7 @@ def main():
 
         output = ''
 
-        output += '\\author{\n'
+        author_lines = []
         for iauthor in range(len(tbl_authors_paper)):
             author = tbl_authors_paper['AUTHOR'][iauthor]
 
@@ -730,13 +736,12 @@ def main():
             email = str(tbl_authors_paper['EMAIL'][iauthor]).strip()
             if iauthor == 0:  # corresponding author gets \corrauth{}
                 email_txt = '\\corrauth{' + email + '}' if email and email != '0' else ''
+                author_lines.append('\\author{' + author + affil_txt + email_txt)
             else:
                 email_txt = '\\email{' + email + '}' if email and email != '0' else ''
+                author_lines.append('\\and ' + author + affil_txt + email_txt)
 
-            prefix = '' if iauthor == 0 else '\\and '
-            output += prefix + author + affil_txt + email_txt + '\n'
-
-        output += '}\n'
+        output += '\n'.join(author_lines) + '}\n'
         output += '\n'
 
         output += '\\institute{\n'
