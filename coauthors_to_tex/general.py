@@ -504,6 +504,15 @@ def main():
                 print(f'There is an empty author in the author list of paper: {tbl_papers["paper key"][i]}')
                 print('Please remove the empty author')
                 continue
+            if ' ' in author:
+                print('~' * get_terminal_width())
+                print(f'There is a problem in the co-author list of paper: {tbl_papers["paper key"][i]}')
+                print(f'Error: the author entry *{author}* contains a space')
+                print('Author lists must be a comma-separated list of SHORTNAMEs with no spaces (e.g. "AB,CD,EF")')
+                print('Please remove the space (check for a stray space after a comma)')
+                print('~' * get_terminal_width())
+                bad_author_flag = True
+                continue
             if author not in tbl_authors['SHORTNAME']:
                 print('~' * get_terminal_width())
                 print(f'There is a problem in the co-author list of paper: {tbl_papers["paper key"][i]}')
