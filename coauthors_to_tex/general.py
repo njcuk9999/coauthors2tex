@@ -355,6 +355,21 @@ def mk_initials(first_names, last_names):
 
     return initials
 
+def index_to_letters(index):
+    """
+    Converts a zero-based index to a lowercase letter label (0->a, 1->b, ..., 25->z, 26->aa, ...).
+
+    :param index: int, zero-based index
+    :return: str, letter label
+    """
+    letters = ''
+    index += 1
+    while index > 0:
+        index, remainder = divmod(index - 1, 26)
+        letters = chr(97 + remainder) + letters
+    return letters
+
+
 def get_tbl_authors(sheet_id,gid2, gid3, gid4) -> Table:
     print('\nWe fetch the data from the google sheet -- list of authors ')
     tbl_nirps_authors = read_google_sheet_csv(sheet_id, gid2)
@@ -760,6 +775,69 @@ def main():
             output += '\\inst{' + ordered_numerical_tags[iaffil] + '}' + affiliation_text + '\\\\\n'
         output += '}'
 
+        output += '\n'
+
+    # We create the latex output for the SPIE Proceedings style
+    elif paper_style == 'SPIE':
+        # loop through authors to find affiliations in order, tagged with letters (a, b, c, ...)
+        ordered_affiliations = []
+        ordered_letter_tags = []
+        for affil in tbl_authors_paper['AFFILIATIONS']:
+            for a in affil.split(','):
+                a_str = a.strip()
+                if a_str not in ordered_affiliations:
+                    ordered_affiliations.append(a_str)
+                    ordered_letter_tags.append(index_to_letters(len(ordered_affiliations) - 1))
+
+        ordered_affiliations = np.array(ordered_affiliations)
+        ordered_letter_tags = np.array(ordered_letter_tags)
+
+        # build "Name\supit{a,b}" for each author
+        author_name_parts = []
+        for iauthor in range(len(tbl_authors_paper)):
+            author = tbl_authors_paper['AUTHOR'][iauthor]
+
+            author_affiliations = [a.strip() for a in tbl_authors_paper['AFFILIATIONS'][iauthor].split(',')]
+
+            affil_letters = ','.join(
+                ordered_letter_tags[affil_str == ordered_affiliations][0]
+                for affil_str in author_affiliations
+            )
+            author_name_parts.append(author + '\\supit{' + affil_letters + '}')
+
+        # join the author names as "A", "A and B" or "A, B, ..., and Z"
+        if len(author_name_parts) == 1:
+            author_list_txt = author_name_parts[0]
+        elif len(author_name_parts) == 2:
+            author_list_txt = author_name_parts[0] + ' and ' + author_name_parts[1]
+        else:
+            author_list_txt = ', '.join(author_name_parts[:-1]) + ', and ' + author_name_parts[-1]
+
+        output = '\\author{' + author_list_txt + '\n'
+        output += '\\skiplinehalf\n'
+
+        affil_lines = []
+        for iaffil in range(len(ordered_affiliations)):
+            affiliation_text = tbl_affiliations['AFFILIATION'][tbl_affiliations['SHORTNAME'] == ordered_affiliations[
+                iaffil]][0]
+            affil_lines.append('\\supit{' + ordered_letter_tags[iaffil] + '}' + affiliation_text)
+        output += '; \\\\\n'.join(affil_lines) + '\n'
+        output += '}\n'
+        output += '\n'
+
+        # further author information (e-mails), corresponding author is the first author listed
+        initials = tbl_authors_paper['INITIALS']
+        info_lines = []
+        for iauthor in range(len(tbl_authors_paper)):
+            email = str(tbl_authors_paper['EMAIL'][iauthor]).strip()
+            if email and email != '0':
+                info_lines.append(initials[iauthor] + ': E-mail: ' + email)
+
+        if info_lines:
+            output += ('\\authorinfo{Further author information: (Send correspondence to '
+                       + initials[0] + '.)\\\\\n')
+            output += '\\\\\n'.join(info_lines)
+            output += '}\n'
         output += '\n'
 
     else:

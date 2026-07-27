@@ -31,7 +31,7 @@ GID3 = '223170284'
 # sheet for the acknowledgements
 GID4 = '671986807'
 # allowed paper styles
-ALLOWED_PAPER_STYLES = ['AJ', 'AANDA']
+ALLOWED_PAPER_STYLES = ['AJ', 'AANDA', 'SPIE']
 
 # -----------------------------------------------------------------------------
 # Define a translation between accented letters to the latex equivalent
