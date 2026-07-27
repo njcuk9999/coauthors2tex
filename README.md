@@ -2,9 +2,9 @@
 
 **Automatically generate publication-ready LaTeX author lists from a shared Google Spreadsheet.**
 
-No more copy-pasting author names, affiliations, or acknowledgements by hand. Just maintain a shared Google Sheet and let `coauthors2tex` generate the correct LaTeX block for your journal — in seconds.
+No more copy-pasting author names, affiliations, or acknowledgements by hand. Just maintain a shared Google Sheet and let `coauthors2tex` generate the correct LaTeX block for your journal, in seconds.
 
-Supports **Astronomy & Astrophysics (A&A)** and **Astronomical Journal (AJ)** formats.
+Supports **Astronomy & Astrophysics (A&A)**, **Astronomical Journal (AJ)**, and **SPIE Proceedings** formats.
 
 ---
 
@@ -31,7 +31,7 @@ Supports **Astronomy & Astrophysics (A&A)** and **Astronomical Journal (AJ)** fo
 
 It then generates a `.tex` snippet ready to paste into your LaTeX paper, including:
 
-- The `\author{}` / `\institute{}` block (or `\affiliation{}` for AJ)
+- The `\author{}` / `\institute{}` block (or `\affiliation{}` for AJ, or `\supit{}` + `\authorinfo{}` for SPIE)
 - The acknowledgements paragraph
 
 ### Supported journal formats
@@ -40,8 +40,11 @@ It then generates a `.tex` snippet ready to paste into your LaTeX paper, includi
 |-----------|---------|---------------------|
 | `AANDA`   | Astronomy & Astrophysics | `\author{...\and ...}` + `\institute{...}` |
 | `AJ`      | Astronomical Journal | `\author[orcid]{...}` + `\affiliation{...}` per author |
+| `SPIE`    | SPIE Proceedings | Single `\author{...\supit{a,b}...}` block + `\authorinfo{...}` footnote |
 
-> **A&A note:** ORCIDs are **not** inserted in the A&A LaTeX block. Per A&A policy, only ORCIDs authenticated through the journal's submission system will be published — any ORCID added manually to the manuscript will be removed.
+> **A&A note:** ORCIDs are **not** inserted in the A&A LaTeX block. Per A&A policy, only ORCIDs authenticated through the journal's submission system will be published, any ORCID added manually to the manuscript will be removed.
+
+> **SPIE note:** affiliations are tagged with lowercase letters (`a`, `b`, `c`, ...) instead of numbers, following the official `spie.cls` template. The corresponding author is the first author listed in the paper's `author list`.
 
 ---
 
@@ -109,7 +112,7 @@ Paste the `\author{}` / `\institute{}` block near the top of your `.tex` file, a
 
 ## Tools
 
-### `coauthors2tex` — generate an author list
+### `coauthors2tex`: generate an author list
 
 The main tool. Generates the full LaTeX author list for a paper defined in the spreadsheet.
 
@@ -134,9 +137,23 @@ coauthors2tex
 }
 ```
 
+**Example SPIE output:**
+
+```latex
+\author{\'E. Artigau\supit{a,b} and N. Cook\supit{c}
+\skiplinehalf
+\supit{a}Université de Montréal, Montréal, Canada; \\
+\supit{b}Observatoire du Mont-Mégantic, Montréal, Canada; \\
+\supit{c}University of Geneva, Geneva, Switzerland
+}
+
+\authorinfo{Further author information: (Send correspondence to EAr.)\\
+EAr: E-mail: etienne.artigau@umontreal.ca}
+```
+
 ---
 
-### `coauthorsxmatch` — match external co-authors to the database
+### `coauthorsxmatch`: match external co-authors to the database
 
 Useful when a collaborator sends you a draft with a co-author list that uses different name formats. This tool fuzzy-matches their names to the entries in the NIRPS database and returns the correct SHORTNAMEs to use in the spreadsheet.
 
@@ -172,7 +189,7 @@ The tool reads from the [NIRPS author list spreadsheet](https://docs.google.com/
 | Column | Description |
 |--------|-------------|
 | `paper key` | Short identifier used as the output filename, e.g. `cook2024` |
-| `STYLE` | Journal format: `AJ` or `AANDA` |
+| `STYLE` | Journal format: `AJ`, `AANDA`, or `SPIE` |
 | `author list` | Comma-separated SHORTNAMEs **in author order** |
 | `ACKNOWLEDGEMENTS` | Comma-separated acknowledgement keys (`0` if none) |
 | `Program ID` | Observing program ID (optional, for reference) |
@@ -223,11 +240,14 @@ GID3 = '...'                        # Tab ID for secondary authors (or None)
 GID4 = '...'                        # Tab ID for acknowledgements
 ```
 
-To find a tab's GID: click on the tab in your browser — the URL will end with `#gid=XXXXXXXX`.
+To find a tab's GID: click on the tab in your browser; the URL will end with `#gid=XXXXXXXX`.
 
 ---
 
 ## Troubleshooting
+
+**`the author entry X contains a space`**
+The `author list` column has a stray space in it, most often a space typed after a comma (e.g. `artigau, cadieux`). Since entries are split on `,`, this produces an entry like ` cadieux` that won't match any SHORTNAME. Remove the space.
 
 **`the author X is not in the list of authors`**
 The SHORTNAME in the `papers` sheet doesn't match any entry in the author sheets. Check for typos or extra spaces.
