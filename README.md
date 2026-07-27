@@ -40,11 +40,11 @@ It then generates a `.tex` snippet ready to paste into your LaTeX paper, includi
 |-----------|---------|---------------------|
 | `AANDA`   | Astronomy & Astrophysics | `\author{...\and ...}` + `\institute{...}` |
 | `AJ`      | Astronomical Journal | `\author[orcid]{...}` + `\affiliation{...}` per author |
-| `SPIE`    | SPIE Proceedings | Single `\author{...\supit{a,b}...}` block + `\authorinfo{...}` footnote |
+| `SPIE`    | SPIE Proceedings | `\author[1,2]{...}` per author + `\affil[N]{...}` block + `\authorinfo{...}` |
 
 > **A&A note:** ORCIDs are **not** inserted in the A&A LaTeX block. Per A&A policy, only ORCIDs authenticated through the journal's submission system will be published, any ORCID added manually to the manuscript will be removed.
 
-> **SPIE note:** affiliations are tagged with lowercase letters (`a`, `b`, `c`, ...) instead of numbers, following the official `spie.cls` template. The corresponding author is the first author listed in the paper's `author list`.
+> **SPIE note:** each author gets their own `\author[N,M]{...}` line with numeric affiliation tags, followed by an `\affil[N]{...}` block in the same numeric order. `\authorinfo{}` lists a single corresponding-author email: the first author in the paper's `author list`.
 
 > **Non-breaking spaces:** in the LaTeX output, every space inside an author's name is replaced with `~` (e.g. `Sylvie F. Beaulieu` becomes `Sylvie~F.~Beaulieu`), so a name is never split across a line break. This only applies to the generated `.tex` file, not to the plain-text lists printed to the terminal.
 
@@ -142,15 +142,13 @@ coauthors2tex
 **Example SPIE output:**
 
 ```latex
-\author{\'E.~Artigau\supit{a,b} and N.~Cook\supit{c}
-\skiplinehalf
-\supit{a}Université de Montréal, Montréal, Canada; \\
-\supit{b}Observatoire du Mont-Mégantic, Montréal, Canada; \\
-\supit{c}University of Geneva, Geneva, Switzerland
-}
+\author[1,2]{\'E.~Artigau}
+\author[3]{N.~Cook}
 
-\authorinfo{Further author information: (Send correspondence to EAr.)\\
-EAr: E-mail: etienne.artigau@umontreal.ca}
+\affil[1]{Université de Montréal, Montréal, Canada}
+\affil[2]{Observatoire du Mont-Mégantic, Montréal, Canada}
+\affil[3]{University of Geneva, Geneva, Switzerland}
+\authorinfo{Further author information: etienne.artigau@umontreal.ca }
 ```
 
 ---

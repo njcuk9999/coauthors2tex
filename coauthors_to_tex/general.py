@@ -367,19 +367,25 @@ def nbsp_name(name: str) -> str:
     return name.replace(' ', '~')
 
 
-def index_to_letters(index):
+def ordered_affiliation_tags(tbl_authors_paper):
     """
-    Converts a zero-based index to a lowercase letter label (0->a, 1->b, ..., 25->z, 26->aa, ...).
+    Builds the list of unique affiliation SHORTNAMEs, in order of first
+    appearance across the paper's author list, together with their numeric
+    tags ("1", "2", ...).
 
-    :param index: int, zero-based index
-    :return: str, letter label
+    :param tbl_authors_paper: Table, authors of the paper (has an 'AFFILIATIONS' column
+                               of comma-separated affiliation SHORTNAMEs)
+    :return: (np.ndarray of SHORTNAMEs, np.ndarray of numeric tag strings)
     """
-    letters = ''
-    index += 1
-    while index > 0:
-        index, remainder = divmod(index - 1, 26)
-        letters = chr(97 + remainder) + letters
-    return letters
+    ordered_affiliations = []
+    ordered_tags = []
+    for affil in tbl_authors_paper['AFFILIATIONS']:
+        for a in affil.split(','):
+            a_str = a.strip()
+            if a_str not in ordered_affiliations:
+                ordered_affiliations.append(a_str)
+                ordered_tags.append(str(len(ordered_affiliations)))
+    return np.array(ordered_affiliations), np.array(ordered_tags)
 
 
 def get_tbl_authors(sheet_id,gid2, gid3, gid4) -> Table:
@@ -743,17 +749,7 @@ def main():
     # We create the latex output for the Astronomy and Astrophysics style
     elif paper_style == 'AANDA':
         # loop through authors to find affliations in order
-        ordered_affiliations = []
-        ordered_numerical_tags = []
-        for affil in tbl_authors_paper['AFFILIATIONS']:
-            for a in affil.split(','):
-                a_str = a.strip()
-                if a_str not in ordered_affiliations:
-                    ordered_affiliations.append(a_str)
-                    ordered_numerical_tags.append(str(len(ordered_affiliations)))
-
-        ordered_affiliations = np.array(ordered_affiliations)
-        ordered_numerical_tags = np.array(ordered_numerical_tags)
+        ordered_affiliations, ordered_numerical_tags = ordered_affiliation_tags(tbl_authors_paper)
 
         output = ''
 
@@ -791,66 +787,31 @@ def main():
 
     # We create the latex output for the SPIE Proceedings style
     elif paper_style == 'SPIE':
-        # loop through authors to find affiliations in order, tagged with letters (a, b, c, ...)
-        ordered_affiliations = []
-        ordered_letter_tags = []
-        for affil in tbl_authors_paper['AFFILIATIONS']:
-            for a in affil.split(','):
-                a_str = a.strip()
-                if a_str not in ordered_affiliations:
-                    ordered_affiliations.append(a_str)
-                    ordered_letter_tags.append(index_to_letters(len(ordered_affiliations) - 1))
+        # loop through authors to find affiliations in order, tagged with numbers (1, 2, 3, ...)
+        ordered_affiliations, ordered_numerical_tags = ordered_affiliation_tags(tbl_authors_paper)
 
-        ordered_affiliations = np.array(ordered_affiliations)
-        ordered_letter_tags = np.array(ordered_letter_tags)
-
-        # build "Name\supit{a,b}" for each author
-        author_name_parts = []
+        output = ''
         for iauthor in range(len(tbl_authors_paper)):
             author = nbsp_name(tbl_authors_paper['AUTHOR'][iauthor])
 
             author_affiliations = [a.strip() for a in tbl_authors_paper['AFFILIATIONS'][iauthor].split(',')]
 
-            affil_letters = ','.join(
-                ordered_letter_tags[affil_str == ordered_affiliations][0]
+            affil_nums = ','.join(
+                ordered_numerical_tags[affil_str == ordered_affiliations][0]
                 for affil_str in author_affiliations
             )
-            author_name_parts.append(author + '\\supit{' + affil_letters + '}')
+            output += '\\author[' + affil_nums + ']{' + author + '}\n'
 
-        # join the author names as "A", "A and B" or "A, B, ..., and Z"
-        if len(author_name_parts) == 1:
-            author_list_txt = author_name_parts[0]
-        elif len(author_name_parts) == 2:
-            author_list_txt = author_name_parts[0] + ' and ' + author_name_parts[1]
-        else:
-            author_list_txt = ', '.join(author_name_parts[:-1]) + ', and ' + author_name_parts[-1]
-
-        output = '\\author{' + author_list_txt + '\n'
-        output += '\\skiplinehalf\n'
-
-        affil_lines = []
+        output += '\n'
         for iaffil in range(len(ordered_affiliations)):
             affiliation_text = tbl_affiliations['AFFILIATION'][tbl_affiliations['SHORTNAME'] == ordered_affiliations[
                 iaffil]][0]
-            affil_lines.append('\\supit{' + ordered_letter_tags[iaffil] + '}' + affiliation_text)
-        output += '; \\\\\n'.join(affil_lines) + '\n'
-        output += '}\n'
-        output += '\n'
+            output += '\\affil[' + ordered_numerical_tags[iaffil] + ']{' + affiliation_text + '}\n'
 
-        # further author information (e-mails), corresponding author is the first author listed
-        initials = tbl_authors_paper['INITIALS']
-        info_lines = []
-        for iauthor in range(len(tbl_authors_paper)):
-            email = str(tbl_authors_paper['EMAIL'][iauthor]).strip()
-            if email and email != '0':
-                info_lines.append(initials[iauthor] + ': E-mail: ' + email)
-
-        if info_lines:
-            output += ('\\authorinfo{Further author information: (Send correspondence to '
-                       + initials[0] + '.)\\\\\n')
-            output += '\\\\\n'.join(info_lines)
-            output += '}\n'
-        output += '\n'
+        # further author information: the corresponding author's e-mail (first author listed)
+        email = str(tbl_authors_paper['EMAIL'][0]).strip()
+        if email and email != '0':
+            output += '\\authorinfo{Further author information: ' + email + ' }\n'
 
     else:
         raise ValueError(f'The style {paper_style} is not implemented')
