@@ -46,6 +46,8 @@ It then generates a `.tex` snippet ready to paste into your LaTeX paper, includi
 
 > **SPIE note:** affiliations are tagged with lowercase letters (`a`, `b`, `c`, ...) instead of numbers, following the official `spie.cls` template. The corresponding author is the first author listed in the paper's `author list`.
 
+> **Non-breaking spaces:** in the LaTeX output, every space inside an author's name is replaced with `~` (e.g. `Sylvie F. Beaulieu` becomes `Sylvie~F.~Beaulieu`), so a name is never split across a line break. This only applies to the generated `.tex` file, not to the plain-text lists printed to the terminal.
+
 ---
 
 ## Installation
@@ -124,9 +126,9 @@ coauthors2tex
 
 ```latex
 \author{
-\'E. Artigau\inst{1,2}\corrauth{etienne.artigau@umontreal.ca}
-\and N. Cook\inst{3}\email{neil.cook@univ.ca}
-\and J. Bouchy\inst{4}
+\'E.~Artigau\inst{1,2}\corrauth{etienne.artigau@umontreal.ca}
+\and N.~Cook\inst{3}\email{neil.cook@univ.ca}
+\and J.~Bouchy\inst{4}
 }
 
 \institute{
@@ -140,7 +142,7 @@ coauthors2tex
 **Example SPIE output:**
 
 ```latex
-\author{\'E. Artigau\supit{a,b} and N. Cook\supit{c}
+\author{\'E.~Artigau\supit{a,b} and N.~Cook\supit{c}
 \skiplinehalf
 \supit{a}Université de Montréal, Montréal, Canada; \\
 \supit{b}Observatoire du Mont-Mégantic, Montréal, Canada; \\

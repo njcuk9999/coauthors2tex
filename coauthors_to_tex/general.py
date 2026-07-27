@@ -355,6 +355,18 @@ def mk_initials(first_names, last_names):
 
     return initials
 
+def nbsp_name(name: str) -> str:
+    """
+    Replaces spaces in an author name with LaTeX non-breaking spaces (~) so
+    the name cannot be split across a line break (e.g. "Sylvie F. Beaulieu"
+    -> "Sylvie~F.~Beaulieu").
+
+    :param name: str, author name as it should appear in the LaTeX output
+    :return: str, name with spaces replaced by ~
+    """
+    return name.replace(' ', '~')
+
+
 def index_to_letters(index):
     """
     Converts a zero-based index to a lowercase letter label (0->a, 1->b, ..., 25->z, 26->aa, ...).
@@ -710,7 +722,7 @@ def main():
     if paper_style == 'AJ':
         output = ''
         for iauthor in range(len(tbl_authors_paper)):
-            author = tbl_authors_paper['AUTHOR'][iauthor]
+            author = nbsp_name(tbl_authors_paper['AUTHOR'][iauthor])
             orcid = tbl_authors_paper['ORCID'][iauthor]
             if len(orcid) > 4:
                 orcid = '[' + orcid + ']'
@@ -747,7 +759,7 @@ def main():
 
         author_lines = []
         for iauthor in range(len(tbl_authors_paper)):
-            author = tbl_authors_paper['AUTHOR'][iauthor]
+            author = nbsp_name(tbl_authors_paper['AUTHOR'][iauthor])
 
             author_affiliations = [a.strip() for a in tbl_authors_paper['AFFILIATIONS'][iauthor].split(',')]
 
@@ -795,7 +807,7 @@ def main():
         # build "Name\supit{a,b}" for each author
         author_name_parts = []
         for iauthor in range(len(tbl_authors_paper)):
-            author = tbl_authors_paper['AUTHOR'][iauthor]
+            author = nbsp_name(tbl_authors_paper['AUTHOR'][iauthor])
 
             author_affiliations = [a.strip() for a in tbl_authors_paper['AFFILIATIONS'][iauthor].split(',')]
 
