@@ -9,6 +9,7 @@ Created on 2024-08-13 at 12:50
 """
 
 import os
+import re
 import shutil
 
 import numpy as np
@@ -23,6 +24,11 @@ import unicodedata
 # =============================================================================
 __version__ = constants.__version__
 __date__ = constants.__date__
+# a LaTeX group {...}, which may itself contain groups (one level deep)
+_GROUP = r'\{(?:[^{}]|\{[^{}]*\})*\}'
+# a link already written in LaTeX, \url{...} or \href{...}{...}, or a bare URL
+URL_REGEX = re.compile(r'\\url' + _GROUP + r'|\\href' + _GROUP + r'(?:' + _GROUP + r')?'
+                       + r'|https?://[^\s{}]+')
 
 # =============================================================================
 # Define functions
@@ -200,6 +206,33 @@ def latexify_accents(txt: str) -> str:
     for letter in constants.LETTER_2_LATEX.keys():
         txt = txt.replace(letter, constants.LETTER_2_LATEX[letter])
     return txt
+
+
+def linkify_urls(txt: str) -> str:
+    """
+    Wraps the bare URLs of a text in a LaTeX \\href{}{} hyperlink. Links that
+    are already written in LaTeX (\\url{...} or \\href{...}{...}) are left as is.
+
+    :param txt: Input string
+    :return: Modified string with the bare URLs turned into hyperlinks
+    """
+    def _href(match):
+        link = match.group(0)
+        # \url{} and \href{}{} are already hyperlinks
+        if link.startswith('\\'):
+            return link
+        # punctuation at the end of a URL belongs to the sentence, not to the link
+        trailing = ''
+        while link[-1] in '.,;:' or (link[-1] == ')' and link.count('(') < link.count(')')):
+            trailing = link[-1] + trailing
+            link = link[:-1]
+        # the text shown is the URL without its scheme (for a DOI, just the DOI)
+        text = link.split('://')[-1]
+        if text.startswith('doi.org/'):
+            text = text[len('doi.org/'):]
+        return '\\href{' + link + '}{' + text + '}' + trailing
+
+    return URL_REGEX.sub(_href, txt)
 
 
 def read_google_sheet_csv(sheet_id: str, gid: str) -> Table:
@@ -574,27 +607,11 @@ def main():
     if flag_double:
         exit()
 
-    # Process acknowledgements to add LaTeX hyperlinks for URLs
-    for i in range(len(tbl_acknowledgements)):
-        ack = tbl_acknowledgements['ACKNOWLEDGEMENTS_TEXT'][i]
-        if 'http' in ack:
-            ack = ack.split(' ')
-            for j in range(len(ack)):
-                if 'http' in ack[j]:
-                    if 'href' in ack[j]:
-                        # Already has a hyperlink
-                        continue
-                    ack_text = (ack[j].split('://'))[-1]
-                    ack_link = ack[j]
-                    # Remove trailing characters like '.' or 'doi.org/'
-                    trimmed_char = ['doi.org/', '.']
-                    for c in trimmed_char:
-                        if ack_link.endswith(c):
-                            ack_link = ack_link[:-1]
-                        if ack_text.startswith(c):
-                            ack_text = ack_text[len(c):]
-                    ack[j] = '\\href{' + ack_link + '}{' + ack_text + '}'
-            tbl_acknowledgements['ACKNOWLEDGEMENTS_TEXT'][i] = ' '.join(ack)
+    # Process acknowledgements to add LaTeX hyperlinks for URLs. The column is
+    # replaced as a whole: its strings have a fixed width, so writing a longer
+    # text into a single row would cut it
+    tbl_acknowledgements['ACKNOWLEDGEMENTS_TEXT'] = [
+        linkify_urls(str(ack)) for ack in tbl_acknowledgements['ACKNOWLEDGEMENTS_TEXT']]
 
     # Prompt the user to select a paper for generating the LaTeX author list
     print('Select the paper for which you want the latex author list:')
@@ -751,7 +768,9 @@ def main():
         # loop through authors to find affliations in order
         ordered_affiliations, ordered_numerical_tags = ordered_affiliation_tags(tbl_authors_paper)
 
-        output = ''
+        # the author block is in the aa.cls v9.4 format, the compatibility lines
+        # make it compile the same way with older versions of the class
+        output = constants.AANDA_COMPAT
 
         author_lines = []
         for iauthor in range(len(tbl_authors_paper)):
@@ -769,7 +788,7 @@ def main():
             if iauthor == 0:  # corresponding author gets \corrauth{}
                 email_txt = '\\corrauth{' + email + '}' if email and email != '0' else ''
                 author_lines.append('\\author{' + author + affil_txt + email_txt)
-            else:
+            else:  # co-author e-mails are for the A&A editorial system, aa.cls does not print them
                 email_txt = '\\email{' + email + '}' if email and email != '0' else ''
                 author_lines.append('\\and ' + author + affil_txt + email_txt)
 

@@ -12,8 +12,8 @@ Created on 2024-08-30 at 12:16
 # =============================================================================
 # Define variables
 # =============================================================================
-__version__ = '1.2'
-__date__ = '2026-07-27'
+__version__ = '1.3'
+__date__ = '2026-10-13'
 # -----------------------------------------------------------------------------
 # The URL to google (must have the "sheet_id" and "gid" parts)
 GOOGLE_URL = 'https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}'
@@ -32,6 +32,21 @@ GID3 = '223170284'
 GID4 = '671986807'
 # allowed paper styles
 ALLOWED_PAPER_STYLES = ['AJ', 'AANDA', 'SPIE']
+# The A&A author block follows the aa.cls v9.4 format: \corrauth{} for the
+#    corresponding author and one \email{} per co-author (read by the A&A
+#    editorial system, not printed). Older versions of the class have no
+#    \corrauth and print every \email{} in the author list, so these lines are
+#    written in front of the author block to give them the v9.4 behaviour
+#    (they do nothing with v9.4 itself)
+AANDA_COMPAT = r"""% Only acts with A&A classes older than v9.4 (does nothing otherwise): defines
+% \corrauth and keeps the co-author e-mails out of the printed author list.
+\makeatletter
+\@ifundefined{corrauth}{%
+\newcommand*{\corrauth}[1]{\thanks{Corresponding author: {\ttfamily #1}}}%
+\@ifundefined{aa@authorfont}{}{\g@addto@macro\aa@authorfont{\renewcommand*{\email}[1]{\unskip}}}%
+}{}
+\makeatother
+"""
 
 # -----------------------------------------------------------------------------
 # Define a translation between accented letters to the latex equivalent
