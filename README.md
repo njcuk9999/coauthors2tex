@@ -109,6 +109,7 @@ The tool will:
 2. Display a numbered list of available papers
 3. Ask you to pick one
 4. Print the LaTeX code to the terminal **and** save it to `{paper_key}_coauthors.tex`
+5. End the report with a table of the team members (every `ROLE` except `OTHER` and `COLL`): name, SHORTNAME, email, and whether they are in the paper's author list, **Included** in green or **Not Included** in red, followed by the counts per role. The colors only appear in a terminal, not when the output is redirected to a file
 
 Paste the `\author{}` / `\institute{}` block near the top of your `.tex` file, and the acknowledgements block inside `\begin{acknowledgements}...\end{acknowledgements}`.
 
@@ -212,6 +213,9 @@ The tool reads from the [NIRPS author list spreadsheet](https://docs.google.com/
 | `SHORTNAME` | Unique key used to reference this author in the `papers` sheet |
 | `AFFILIATIONS` | Comma-separated affiliation SHORTNAMEs (must exist in the `affiliations` sheet) |
 | `ACKNOWLEDGEMENTS` | Comma-separated acknowledgement keys (`0` if none) |
+| `ROLE` | Role in the team, e.g. `BOARD`, `BUILDER`, `COLL`, or `OTHER` for the `other_authors` sheet. Everyone whose role is not `OTHER` or `COLL` is listed in the table at the end of the report, as included in the paper's author list or not |
+
+Any other column whose name contains `COMMENT` is ignored, so notes can be kept there.
 
 ### `affiliations` sheet columns
 
@@ -256,9 +260,14 @@ GID4 = '...'                        # Tab ID for acknowledgements
 
 To find a tab's GID: click on the tab in your browser; the URL will end with `#gid=XXXXXXXX`.
 
+The roles left out of that table are set in the same file, with `ROLES_NOT_REQUIRED = ['OTHER', 'COLL']`.
+
 ---
 
 ## Troubleshooting
+
+**`the table should not have a column named X`**
+A sheet has a column the tool does not know about. If it is `ROLE`, your copy of the tool predates that column: update it (`git pull` in the `coauthors2tex` folder). A column for notes is accepted as long as its name contains `COMMENT`.
 
 **`the author entry X contains a space`**
 The `author list` column has a stray space in it, most often a space typed after a comma (e.g. `artigau, cadieux`). Since entries are split on `,`, this produces an entry like ` cadieux` that won't match any SHORTNAME. Remove the space.

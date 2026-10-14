@@ -11,6 +11,7 @@ Created on 2024-08-13 at 12:50
 import os
 import re
 import shutil
+import sys
 
 import numpy as np
 import wget
@@ -433,7 +434,8 @@ def get_tbl_authors(sheet_id,gid2, gid3, gid4) -> Table:
                 'EMAIL',
                 'SHORTNAME',
                 'AFFILIATIONS',
-                'ACKNOWLEDGEMENTS']
+                'ACKNOWLEDGEMENTS',
+                'ROLE']
 
     # Check if the NIRPS authors table has the required columns
     if check_columns(tbl_nirps_authors, colnames):
@@ -966,6 +968,66 @@ def main():
     print('Simple list of co-authors in order of appearance:\n')
     print('\n'.join(tbl_authors_paper['AUTHOR']))
     print('\n')
+    print('~' * get_terminal_width())
+
+    # Table of the team members, all roles except those that are not expected on
+    # every paper, saying whether each one is in the author list of this paper
+    not_required = [role.upper() for role in constants.ROLES_NOT_REQUIRED]
+    paper_shortnames = set(tbl_authors_paper['SHORTNAME'])
+    team = [i for i in range(len(tbl_authors))
+            if tbl_authors['ROLE'][i].strip().upper() not in not_required]
+    # one group per role, in the order in which roles appear in the sheet
+    roles = []
+    for i in team:
+        if tbl_authors['ROLE'][i] not in roles:
+            roles.append(tbl_authors['ROLE'][i])
+
+    # colors only when printing to a terminal, not when the output is redirected
+    if sys.stdout.isatty():
+        green, red, bold, reset = '\033[32m', '\033[31m', '\033[1m', '\033[0m'
+    else:
+        green = red = bold = reset = ''
+
+    header = ['Role', 'Name', 'Shortname', 'Email', 'Status']
+    groups = []
+    for role in roles:
+        rows = []
+        for i in team:
+            if tbl_authors['ROLE'][i] != role:
+                continue
+            email = str(tbl_authors['EMAIL'][i]).strip()
+            if email in ['', '0', '--']:
+                email = '(no email)'
+            included = tbl_authors['SHORTNAME'][i] in paper_shortnames
+            # the role is only written on the first line of its group
+            rows.append(([role if len(rows) == 0 else '', tbl_authors['AUTHOR'][i], tbl_authors['SHORTNAME'][i],
+                          email, 'Included' if included else 'Not Included'], included))
+        groups.append(rows)
+    widths = [max([len(header[k])] + [len(row[k]) for rows in groups for row, _ in rows])
+              for k in range(len(header))]
+    line = '  '.join('-' * w for w in widths)
+
+    print('Team members and whether they are in the author list of this paper')
+    print('(all roles except {})\n'.format(', '.join(constants.ROLES_NOT_REQUIRED)))
+    print(bold + '  '.join(h.ljust(w) for h, w in zip(header, widths)) + reset)
+    for rows in groups:
+        print(line)
+        for row, included in rows:
+            color = green if included else red
+            cells = '  '.join(c.ljust(w) for c, w in zip(row[:-1], widths[:-1]))
+            print(color + cells + '  ' + bold + row[-1] + reset)
+    print(line)
+
+    # count per role and in total
+    print()
+    n_in_total = 0
+    for role, rows in zip(roles, groups):
+        n_in = sum(included for _, included in rows)
+        n_in_total += n_in
+        print('{:<{w}}  {}{:>3} included{}  {}{:>3} not included{}'.format(
+            role, green, n_in, reset, red, len(rows) - n_in, reset, w=widths[0]))
+    print(bold + '{:<{w}}  {}{:>3} included{}  {}{:>3} not included{}'.format(
+        'Total', green, n_in_total, reset + bold, red, len(team) - n_in_total, reset, w=widths[0]) + reset)
     print('~' * get_terminal_width())
 
 # =============================================================================

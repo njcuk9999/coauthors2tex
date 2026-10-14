@@ -12,8 +12,8 @@ Created on 2024-08-30 at 12:16
 # =============================================================================
 # Define variables
 # =============================================================================
-__version__ = '1.3'
-__date__ = '2026-10-13'
+__version__ = '1.4'
+__date__ = '2026-10-14'
 # -----------------------------------------------------------------------------
 # The URL to google (must have the "sheet_id" and "gid" parts)
 GOOGLE_URL = 'https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}'
@@ -32,6 +32,10 @@ GID3 = '223170284'
 GID4 = '671986807'
 # allowed paper styles
 ALLOWED_PAPER_STYLES = ['AJ', 'AANDA', 'SPIE']
+# roles (ROLE column of the author sheets) of people who are not expected on
+#    every paper; the team members with any other role who are not in a
+#    paper's author list are listed at the end of the report
+ROLES_NOT_REQUIRED = ['OTHER', 'COLL']
 # The A&A author block follows the aa.cls v9.4 format: \corrauth{} for the
 #    corresponding author and one \email{} per co-author (read by the A&A
 #    editorial system, not printed). Older versions of the class have no
