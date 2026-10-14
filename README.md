@@ -109,7 +109,7 @@ The tool will:
 2. Display a numbered list of available papers
 3. Ask you to pick one
 4. Print the LaTeX code to the terminal **and** save it to `{paper_key}_coauthors.tex`
-5. End the report with a table of the team members (every `ROLE` except `OTHER`, `COLL`, `EXCLUDE` and `INTERN`): name, SHORTNAME, email, and whether they are in the paper's author list, **Included** in green or **Not Included** in red, followed by the counts per role. The colors only appear in a terminal, not when the output is redirected to a file
+5. End the report with a table of the team members (every `ROLE` except `OTHER`, `COLL`, `EXCLUDE`, `INTERN` and `BUILDER`; `KEY BUILDER` is kept): name, SHORTNAME, email, and whether they are in the paper's author list, **Included** in green or **Not Included** in red, followed by the counts per role. The colors only appear in a terminal, not when the output is redirected to a file
 
 Paste the `\author{}` / `\institute{}` block near the top of your `.tex` file, and the acknowledgements block inside `\begin{acknowledgements}...\end{acknowledgements}`.
 
@@ -213,7 +213,7 @@ The tool reads from the [NIRPS author list spreadsheet](https://docs.google.com/
 | `SHORTNAME` | Unique key used to reference this author in the `papers` sheet |
 | `AFFILIATIONS` | Comma-separated affiliation SHORTNAMEs (must exist in the `affiliations` sheet) |
 | `ACKNOWLEDGEMENTS` | Comma-separated acknowledgement keys (`0` if none) |
-| `ROLE` | Role in the team, e.g. `BOARD`, `BUILDER`, `COLL`, or `OTHER` for the `other_authors` sheet. Everyone whose role is not `OTHER`, `COLL`, `EXCLUDE` or `INTERN` is listed in the table at the end of the report, as included in the paper's author list or not |
+| `ROLE` | Role in the team, e.g. `BOARD`, `BUILDER`, `COLL`, or `OTHER` for the `other_authors` sheet. Everyone whose role is not `OTHER`, `COLL`, `EXCLUDE`, `INTERN` or `BUILDER` is listed in the table at the end of the report, as included in the paper's author list or not |
 
 Any other column whose name contains `COMMENT` is ignored, so notes can be kept there.
 
@@ -260,7 +260,7 @@ GID4 = '...'                        # Tab ID for acknowledgements
 
 To find a tab's GID: click on the tab in your browser; the URL will end with `#gid=XXXXXXXX`.
 
-The roles left out of that table are set in the same file, with `ROLES_NOT_REQUIRED = ['OTHER', 'COLL', 'EXCLUDE', 'INTERN']`.
+The roles left out of that table are set in the same file, with `ROLES_NOT_REQUIRED = ['OTHER', 'COLL', 'EXCLUDE', 'INTERN', 'BUILDER']`.
 
 ---
 
